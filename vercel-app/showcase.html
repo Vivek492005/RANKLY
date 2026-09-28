@@ -468,7 +468,7 @@
       syncStatusPill('syncing', 'Connecting to database…');
       // Primary path: server-side board API (no public sheet sharing needed).
       try {
-        const res = await fetch('/api/leaderboard', { cache: 'no-store' });
+        const res = await fetch(API_BASE + '/api/leaderboard', { cache: 'no-store' });
         if (!res.ok) throw new Error('board API failed: ' + res.status);
         applyBoardPayload(await res.json(), highlightTitle);
         syncStatusPill('live', 'Live database');
@@ -671,7 +671,7 @@
       const v = renderSnipeBanner();
       if (v.phase === 'idle') return;
       try {
-        const res = await fetch('/api/leaderboard', { cache: 'no-store' });
+        const res = await fetch(API_BASE + '/api/leaderboard', { cache: 'no-store' });
         if (!res.ok) return;
         const data = await res.json();
         const prev = snipeOrder;
@@ -698,7 +698,7 @@
     // ---------- Duel Arena (showcase) ----------
     async function loadDuels() {
       try {
-        const res = await fetch('/api/duels', { cache: 'no-store' });
+        const res = await fetch(API_BASE + '/api/duels', { cache: 'no-store' });
         if (!res.ok) throw new Error('duels failed');
         duelsCache = (await res.json()).duels || [];
       } catch (e) { duelsCache = []; }
@@ -766,7 +766,7 @@
         errEl.hidden = true;
         $('#duelSubmit').disabled = true;
         try {
-          const res = await fetch('/api/duels', {
+          const res = await fetch(API_BASE + '/api/duels', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ challengerKey, opponentKey: duelOpponentKey }),
           });

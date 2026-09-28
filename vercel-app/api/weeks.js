@@ -5,7 +5,9 @@
 // archive holds only public leaderboard data.
 const { getWeeklyArchive } = require('../lib/sheets');
 
+const { applyCors } = require('../lib/cors');
 module.exports = async function handler(req, res) {
+  if (applyCors(req, res)) return; // CORS for the GitHub Pages mirror
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
   try {
     const data = await getWeeklyArchive();

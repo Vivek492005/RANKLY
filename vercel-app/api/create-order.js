@@ -12,7 +12,9 @@ const { validatePhoto, uploadProfilePhoto } = require('../lib/photos');
 const { validateClaimBody, extractUser } = require('../lib/claimValidation');
 const { isRazorpayConfigured, getClient, newReceipt, keyId } = require('../lib/razorpay');
 const { upsertVerification } = require('../lib/sheets');
+const { applyCors } = require('../lib/cors');
 module.exports = async function handler(req, res) {
+  if (applyCors(req, res)) return; // CORS for the GitHub Pages mirror
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   if (!isRazorpayConfigured()) {
     return res.status(503).json({ error: 'Online payments are not enabled yet. Please try again later.' });

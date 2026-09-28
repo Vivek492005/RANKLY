@@ -1,6 +1,11 @@
 'use strict';
 /* Rankly shared frontend: config, sheet fetching, payments, checkout, dialogs. */
 
+// GitHub Pages mirror: the static copy on <user>.github.io has no /api/*
+// functions, so its frontend calls the Vercel deployment cross-origin
+// (the APIs send CORS headers for the Pages origin). Same-origin elsewhere.
+const API_BASE = /github\.io$/.test(location.hostname) ? 'https://ranklyy.vercel.app' : '';
+
 // ---- Live database: Google Sheets + Docs ----
 const RANKLY_DB = {
   spreadsheetId: '1FSWiEoLh8AgADL8jiFye4wOL5lt1KwjYjwSeeTBuy0o',
@@ -45,7 +50,7 @@ async function fetchSheet(tab) {
 
 // ---- Previous weeks (weekly archive) ----
 async function fetchWeeks() {
-  const res = await fetch('/api/weeks', { cache: 'no-store' });
+  const res = await fetch(API_BASE + '/api/weeks', { cache: 'no-store' });
   if (!res.ok) throw new Error('Weeks fetch failed: ' + res.status);
   return res.json();
 }
@@ -116,7 +121,7 @@ let payConfig = { mode: 'unconfigured', sheetsConfigured: false, upiId: 'sochai@
 async function initPayments() {
   const badge = $('#payModeBadge');
   try {
-    const res = await fetch('/api/config');
+    const res = await fetch(API_BASE + '/api/config');
     payConfig = await res.json();
   } catch { payConfig = { mode: 'unconfigured', sheetsConfigured: false, upiId: 'sochai@ptyes' }; }
   if (payConfig.upiId) {
@@ -196,7 +201,7 @@ function wireCheckout() {
     const btn = $('#confirmCheckout');
     btn.disabled = true; btn.textContent = 'Submitting…';
     try {
-      const res = await fetch('/api/submit-claim', {
+      const res = await fetch(API_BASE + '/api/submit-claim', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...checkoutBody, utr }),
       });
@@ -261,7 +266,7 @@ async function payWithRazorpay() {
   btn.disabled = true; btn.textContent = 'Starting payment…';
   try {
     await loadRazorpayScript();
-    const res = await fetch('/api/create-order', {
+    const res = await fetch(API_BASE + '/api/create-order', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(checkoutBody),
       signal: AbortSignal.timeout(30000),
@@ -305,7 +310,7 @@ async function payWithRazorpay() {
 async function handleRazorpaySuccess(resp, btn, origLabel) {
   btn.disabled = true; btn.textContent = 'Verifying payment…';
   try {
-    const res = await fetch('/api/verify-payment', {
+    const res = await fetch(API_BASE + '/api/verify-payment', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(resp),
     });
@@ -355,7 +360,7 @@ function openVerifyDialog(utr, isRazorpay) {
   const tick = async () => {
     verifyPolls++;
     try {
-      const res = await fetch('/api/claim-status?utr=' + encodeURIComponent(utr), { cache: 'no-store' });
+      const res = await fetch(API_BASE + '/api/claim-status?utr=' + encodeURIComponent(utr), { cache: 'no-store' });
       const data = await res.json();
       if (data.found && data.status === 'applied') {
         stopVerifyPolling();

@@ -18,7 +18,9 @@ const { recordPendingClaim, findUnmatchedPayment, markPaymentMatched, autoVerify
 const { validatePhoto, uploadProfilePhoto } = require('../lib/photos');
 const { validateClaimBody, extractUser } = require('../lib/claimValidation');
 
+const { applyCors } = require('../lib/cors');
 module.exports = async function handler(req, res) {
+  if (applyCors(req, res)) return; // CORS for the GitHub Pages mirror
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   let body = req.body;

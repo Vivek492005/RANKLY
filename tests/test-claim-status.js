@@ -21,6 +21,7 @@ function mockRes() {
     code: null, body: null,
     status(c) { this.code = c; return this; },
     json(o) { this.body = o; return this; },
+    setHeader() {}, end() {},
   };
 }
 

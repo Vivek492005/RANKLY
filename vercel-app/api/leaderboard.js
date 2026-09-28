@@ -4,7 +4,9 @@
 // { profiles, works, activity, stats, snipe, serverTime }. No emails exposed.
 const { getBoardData } = require('../lib/sheets');
 
+const { applyCors } = require('../lib/cors');
 module.exports = async function handler(req, res) {
+  if (applyCors(req, res)) return; // CORS for the GitHub Pages mirror
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
   try {
     const data = await getBoardData();

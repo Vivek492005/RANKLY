@@ -24,7 +24,9 @@ function rateLimited(ip) {
   return false;
 }
 
+const { applyCors } = require('../lib/cors');
 module.exports = async function handler(req, res) {
+  if (applyCors(req, res)) return; // CORS for the GitHub Pages mirror
   try {
     if (req.method === 'GET') {
       const duels = await sheets.getDuels();

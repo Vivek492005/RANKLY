@@ -5,7 +5,9 @@
 // status/rank/board/name — no PII beyond what the submitter provided.
 const { findClaimByUtr } = require('../lib/sheets');
 
+const { applyCors } = require('../lib/cors');
 module.exports = async function handler(req, res) {
+  if (applyCors(req, res)) return; // CORS for the GitHub Pages mirror
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
   const utr = String(req.query.utr || '').trim().replace(/\s+/g, '');
   // Razorpay order ids (stored in the same column) contain underscores.

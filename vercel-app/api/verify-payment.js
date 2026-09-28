@@ -10,7 +10,9 @@
 const { verifyAndApplyRazorpayClaim } = require('../lib/sheets');
 const { isRazorpayConfigured, getClient, verifyPaymentSignature } = require('../lib/razorpay');
 
+const { applyCors } = require('../lib/cors');
 module.exports = async function handler(req, res) {
+  if (applyCors(req, res)) return; // CORS for the GitHub Pages mirror
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   if (!isRazorpayConfigured()) {
     return res.status(503).json({ error: 'Online payments are not enabled yet.' });

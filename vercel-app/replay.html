@@ -142,7 +142,11 @@
 
     (async function init() {
       try {
-        const res = await fetch('/api/snapshots', { cache: 'no-store' });
+        // Same API-base rule as shared.js (this page's inline script runs
+        // before shared.js, so it can't use that const): on the GitHub Pages
+        // mirror, call the Vercel APIs cross-origin.
+        const apiBase = /github\.io$/.test(location.hostname) ? 'https://ranklyy.vercel.app' : '';
+        const res = await fetch(apiBase + '/api/snapshots', { cache: 'no-store' });
         if (!res.ok) throw new Error('snapshots failed');
         days = ((await res.json()).days || []).slice().sort((a, b) => a.date < b.date ? -1 : 1);
       } catch (e) { days = []; }

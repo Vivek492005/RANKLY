@@ -109,4 +109,24 @@ t('empty board: any valid bid accepted', () => {
   assert.strictEqual(sheets.incrementError({ topBid: 0, existingBid: null }, 1), null);
 });
 
+// ---------- CORS for the GitHub Pages mirror ----------
+t('applyCors sets the Pages origin and short-circuits OPTIONS', () => {
+  const { applyCors, PAGES_ORIGIN } = require('../vercel-app/lib/cors');
+  const headers = {};
+  const mkRes = () => ({
+    setHeader(k, v) { headers[k] = v; },
+    status(c) { this.code = c; return this; },
+    end() { this.ended = true; },
+  });
+  const r1 = mkRes();
+  assert.strictEqual(applyCors({ method: 'GET' }, r1), false, 'GET not short-circuited');
+  assert.strictEqual(headers['Access-Control-Allow-Origin'], PAGES_ORIGIN, 'Pages origin set');
+  assert.strictEqual(headers['Access-Control-Allow-Origin'], 'https://vivek492005.github.io');
+  assert.ok(!('*' in headers) && headers['Access-Control-Allow-Origin'] !== '*', 'never *');
+  const r2 = mkRes();
+  assert.strictEqual(applyCors({ method: 'OPTIONS' }, r2), true, 'OPTIONS handled');
+  assert.strictEqual(r2.code, 204, 'preflight -> 204');
+  assert.ok(r2.ended, 'preflight ended');
+});
+
 console.log(`\n${pass} backend tests passed`);

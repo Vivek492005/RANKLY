@@ -2,15 +2,18 @@
 
 Rankly is a live leaderboard where students bid for rank positions. The site
 reads live data from a Google Sheet ("Rankly Database"), accepts bids through
-serverless claim endpoints, and runs on Vercel.
+serverless claim endpoints, and runs on Vercel. A static mirror of the
+frontend is also served from GitHub Pages (APIs stay on Vercel).
 
 **Live site:** https://ranklyy.vercel.app
+**Pages mirror:** https://vivek492005.github.io/RANKLY/
 
 ## Layout
 
 | Path | What it is |
 |---|---|
 | `vercel-app/` | The deployed site (Vercel project root). Static pages (`index.html` student board, `showcase.html`, `replay.html`) + serverless APIs under `api/` and shared code under `lib/`. |
+| `.github/workflows/deploy-pages.yml` | Deploys `vercel-app/` to GitHub Pages on every push touching it. |
 | `*.py` (repo root) | Automation scripts run on a schedule: `process_claims.py` (applies pending claims every 30 min), `daily_maintenance.py` (re-sort ranks, recompute stats), `weekly_reset.py` (Sunday archive + board reset — data is never deleted), `resolve_duels.py` (settles 24h bid duels), `outbid_alerts.py` (email alerts), `daily_snapshot.py`, `seed_sheets.py` (rebuild sheet tabs), `verify_profiles.py`, `rankly_db.py` (shared Sheets helper). |
 | `tests/` | JS suites (`test-*.js`) and Python suites (`test_*.py`) covering backend logic, payments, photos, weekly archive, duels, and UI flows. |
 | `docs/` | Terms & Privacy sources (`rankly-terms.docx`, `rankly-privacy.docx`, `build_docs.py`). The live site loads the published Google Docs versions. |
@@ -30,21 +33,43 @@ from that directory, or connect this repo and set the root accordingly.
 |---|---|
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | Service-account key JSON for Sheets access |
 | `UPI_WEBHOOK_SECRET` | Shared secret for the bank-SMS forwarder (`/api/upi-webhook`) |
-| `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` | Razorpay API credentials (test or live) |
-| `RAZORPAY_WEBHOOK_SECRET` | Signs `/api/razorpay-webhook` requests |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob token for optional profile photos |
+| `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` | Only if Razorpay is ever re-enabled (see Payments) |
+| `RAZORPAY_WEBHOOK_SECRET` | Only if Razorpay is ever re-enabled |
 
 Set these in the Vercel dashboard — never commit them.
 
+## Deploy (GitHub Pages)
+
+Pushes to `main` that touch `vercel-app/**` auto-deploy the static frontend
+to `https://vivek492005.github.io/RANKLY/` via the `deploy-pages` workflow
+(manual runs: Actions → "Deploy Rankly to GitHub Pages" → Run workflow).
+
+GitHub Pages can't run the serverless APIs, so on `github.io` the frontend
+calls `https://ranklyy.vercel.app/api/*` cross-origin. `vercel-app/lib/cors.js`
+adds the exact Pages origin to the nine frontend-facing APIs (no wildcard).
+
+First-time setup: repo **Settings → Pages → Source: GitHub Actions**, then
+run the workflow once.
+
 ## Payments
 
-Two flows exist. Razorpay checkout (`create-order` → Checkout → `verify-payment`,
-`razorpay-webhook` as backstop) and the manual-UPI fallback (`submit-claim` +
-bank-SMS auto-verification via `/api/upi-webhook`). See `vercel-app/api/`
-and `vercel-app/lib/`.
+The working path is **manual UPI + bank-SMS auto-verification**: the bidder
+pays the UPI ID shown at checkout, the bank's "money credited" SMS is
+forwarded to `/api/upi-webhook`, and matching claims are verified and applied
+automatically (`submit-claim` also checks the inbox on submit, so
+SMS-arrived-first still applies instantly).
+
+Razorpay checkout (`create-order` → Checkout → `verify-payment`, with
+`razorpay-webhook` as backstop) is implemented but **not a live option**:
+Razorpay rejected the business activation, so its keys only ever work in
+test mode and can never settle real money.
 
 ## Data & privacy
 
 The leaderboard database is a private Google Sheet; this repo contains its
 structure and automation, not its data. Claim identity keys are opaque
 hashes — emails never appear in API payloads or the frontend.
+
+Rankings reset every Sunday ~00:05 IST into a permanent weekly archive —
+nothing is ever deleted.

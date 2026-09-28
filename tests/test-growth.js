@@ -148,7 +148,7 @@ async function run() {
     const handler = require(handlerPath);
     const base = { board: 'profiles', name: 'Asha', headline: 'Dev', linkedin: 'https://linkedin.com/in/asha', utr: 'ABCDEF123456' };
     const call = async (bid) => {
-      const res = { statusCode: 200, status(c) { this.statusCode = c; return this; }, json(o) { this.body = o; return this; } };
+      const res = { statusCode: 200, status(c) { this.statusCode = c; return this; }, json(o) { this.body = o; return this; }, setHeader() {}, end() {} };
       await handler({ method: 'POST', body: { ...base, bid } }, res);
       return res;
     };
@@ -177,7 +177,7 @@ async function run() {
     const handler = require(handlerPath);
     const base = { board: 'profiles', name: 'Asha', headline: 'Dev', linkedin: 'https://linkedin.com/in/asha', utr: 'ABCDEF123456' };
     const call = async (bid) => {
-      const res = { statusCode: 200, status(c) { this.statusCode = c; return this; }, json(o) { this.body = o; return this; } };
+      const res = { statusCode: 200, status(c) { this.statusCode = c; return this; }, json(o) { this.body = o; return this; }, setHeader() {}, end() {} };
       await handler({ method: 'POST', body: { ...base, bid } }, res);
       return res;
     };

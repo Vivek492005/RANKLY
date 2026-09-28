@@ -5,7 +5,9 @@ const UPI_ID = process.env.UPI_ID || 'sochai@ptyes';
 const MIN_BID = 1;
 const MAX_BID = 999;
 
+const { applyCors } = require('../lib/cors');
 module.exports = async function handler(req, res) {
+  if (applyCors(req, res)) return; // CORS for the GitHub Pages mirror
   res.setHeader('Cache-Control', 'no-store');
   const razorpay = isRazorpayConfigured();
   res.status(200).json({
