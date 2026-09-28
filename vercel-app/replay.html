@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Week Replay — Rankly</title>
+  <meta name="description" content="Watch the week's rank battle unfold, day by day.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="shared.js" defer></script>
+</head>
+<body>
+  <main class="replay-page">
+    <a class="replay-back" href="index.html">← Back to the leaderboard</a>
+    <h1>Week <span class="accent">Replay</span></h1>
+    <p class="replay-sub">The rank battle, day by day. Press play and watch the bids move.</p>
+
+    <div class="replay-controls">
+      <div class="replay-tabs view-tabs" role="tablist" aria-label="Board">
+        <button class="view-tab" role="tab" aria-selected="true" data-board="profiles">Profiles</button>
+        <button class="view-tab" role="tab" aria-selected="false" data-board="showcase">Showcase</button>
+      </div>
+      <button class="replay-btn" id="playBtn" type="button">▶ Play</button>
+      <input class="replay-scrub" id="dayScrub" type="range" min="0" max="0" value="0" step="1" aria-label="Day">
+      <span class="replay-day" id="dayLabel">Loading…</span>
+      <button class="replay-btn" id="exportBtn" type="button" style="background:transparent;color:var(--ink);border-color:var(--line)">⤓ Share frame</button>
+    </div>
+
+    <div class="race" id="race"></div>
+  </main>
+
+  <script>
+    let days = [];
+    let board = 'profiles';
+    let dayIdx = 0;
+    let timer = null;
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const raceEl = document.getElementById('race');
+    const playBtn = document.getElementById('playBtn');
+    const scrub = document.getElementById('dayScrub');
+    const dayLabel = document.getElementById('dayLabel');
+
+    function entriesFor(day) {
+      return (board === 'profiles' ? day.profiles : day.showcase) || [];
+    }
+
+    function render() {
+      if (!days.length) {
+        raceEl.innerHTML = '<div class="replay-empty">No snapshots yet — the replay unlocks once the daily snapshot has run at least twice this week.</div>';
+        dayLabel.textContent = 'No data';
+        playBtn.disabled = true;
+        return;
+      }
+      const day = days[dayIdx];
+      const entries = entriesFor(day).slice().sort((a, b) => b.bid - a.bid).slice(0, 8);
+      const max = Math.max(...entries.map(e => e.bid), 1);
+      dayLabel.textContent = fmtReplayDate(day.date) + ` · Day ${dayIdx + 1}/${days.length}`;
+      raceEl.innerHTML = entries.length ? entries.map((e, i) => `
+        <div class="race-row">
+          <span class="avatar" style="${avatarStyle(e.name)}" aria-hidden="true">${escapeHTML(initialsOf(e.name))}</span>
+          <span class="race-name" title="${escapeHTML(e.name)}">${i + 1}. ${escapeHTML(e.name)}</span>
+          <span class="race-barwrap"><span class="race-bar" style="width:${Math.max(3, Math.round((e.bid / max) * 100))}%"></span></span>
+          <span class="race-bid">${money(e.bid)}</span>
+          <span class="race-rank">#${i + 1}</span>
+        </div>`).join('')
+        : '<div class="replay-empty">No entries on this board yet.</div>';
+      scrub.value = dayIdx;
+    }
+
+    function fmtReplayDate(iso) {
+      const d = new Date(iso + 'T12:00:00');
+      return d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+    }
+
+    function stop() {
+      if (timer) clearInterval(timer);
+      timer = null;
+      playBtn.textContent = '▶ Play';
+    }
+
+    function play() {
+      if (!days.length) return;
+      if (dayIdx >= days.length - 1) dayIdx = 0;
+      playBtn.textContent = '⏸ Pause';
+      timer = setInterval(() => {
+        dayIdx++;
+        if (dayIdx >= days.length - 1) { dayIdx = days.length - 1; stop(); }
+        render();
+      }, 1400);
+    }
+
+    playBtn.addEventListener('click', () => (timer ? stop() : play()));
+    scrub.addEventListener('input', () => { stop(); dayIdx = Number(scrub.value); render(); });
+    document.querySelectorAll('[data-board]').forEach(btn => btn.addEventListener('click', () => {
+      board = btn.dataset.board;
+      document.querySelectorAll('[data-board]').forEach(b => b.setAttribute('aria-selected', String(b === btn)));
+      stop(); dayIdx = days.length ? days.length - 1 : 0; render();
+    }));
+
+    // Export the current frame as a shareable PNG.
+    document.getElementById('exportBtn').addEventListener('click', async () => {
+      if (!days.length) return;
+      const day = days[dayIdx];
+      const entries = entriesFor(day).slice().sort((a, b) => b.bid - a.bid).slice(0, 8);
+      const canvas = document.createElement('canvas');
+      canvas.width = 900; canvas.height = 560;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#FDF9F0'; ctx.fillRect(0, 0, 900, 560);
+      ctx.fillStyle = '#FF6A4D'; ctx.font = '900 34px sans-serif';
+      ctx.fillText(`RANKLY — Week Replay`, 40, 60);
+      ctx.fillStyle = '#5A5348'; ctx.font = '700 22px sans-serif';
+      ctx.fillText(`${board === 'profiles' ? 'Student Leaderboard' : 'Showcase'} · ${fmtReplayDate(day.date)}`, 40, 96);
+      const max = Math.max(...entries.map(e => e.bid), 1);
+      entries.forEach((e, i) => {
+        const y = 140 + i * 48;
+        ctx.fillStyle = '#2A2520'; ctx.font = '700 19px sans-serif';
+        ctx.fillText(`${i + 1}. ${e.name}`.slice(0, 30), 40, y + 20);
+        const w = Math.max(6, ((e.bid / max) * 480));
+        ctx.fillStyle = i === 0 ? '#FF6A4D' : '#F4D9CC';
+        ctx.fillRect(300, y, w, 26);
+        ctx.fillStyle = '#C24A2F'; ctx.font = '800 19px sans-serif';
+        ctx.fillText('₹' + Number(e.bid).toLocaleString('en-IN'), 800, y + 20);
+      });
+      ctx.fillStyle = '#8A8276'; ctx.font = '400 15px sans-serif';
+      ctx.fillText('vercel-app-ashen-eight.vercel.app', 40, 530);
+      canvas.toBlob(async (blob) => {
+        const file = new File([blob], 'rankly-replay.png', { type: 'image/png' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try { await navigator.share({ files: [file], title: 'Rankly Week Replay' }); return; }
+          catch (e) { if (e && e.name === 'AbortError') return; }
+        }
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'rankly-replay.png';
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      }, 'image/png');
+    });
+
+    (async function init() {
+      try {
+        const res = await fetch('/api/snapshots', { cache: 'no-store' });
+        if (!res.ok) throw new Error('snapshots failed');
+        days = ((await res.json()).days || []).slice().sort((a, b) => a.date < b.date ? -1 : 1);
+      } catch (e) { days = []; }
+      scrub.max = Math.max(0, days.length - 1);
+      dayIdx = days.length ? days.length - 1 : 0;
+      render();
+      if (days.length > 1 && !reduceMotion) play();
+    })();
+  </script>
+</body>
+</html>

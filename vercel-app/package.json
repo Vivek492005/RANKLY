@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "@vercel/blob": "^1.1.1",
+    "googleapis": "^128.0.0",
+    "razorpay": "^2.9.8"
+  },
+  "description": "Rankly — pay-to-rank student leaderboard + work showcase (Vercel + manual UPI + Google Sheets)",
+  "name": "rankly",
+  "private": true,
+  "version": "1.0.0"
+}

@@ -1,0 +1,10 @@
+# Build / deploy artifacts — never commit
+.vercel/
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+.env
+.env.*
+!.env.example

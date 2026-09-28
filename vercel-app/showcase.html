@@ -1,0 +1,866 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light" />
+  <meta name="theme-color" content="#FDF9F0" />
+  <link rel="icon" href="data:," />
+  <title>Rankly — Showcase</title>
+  <meta name="description" content="Rankly Showcase: put your work — GitHub projects, Instagram or LinkedIn creations — at the very top by outbidding others." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Ambient live background layers (decorative, aria-hidden) -->
+  <div class="ambient-blobs" id="ambientBlobs" aria-hidden="true"><span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span></div>
+  <div class="dot-grid" aria-hidden="true"></div>
+  <canvas class="bid-rain" id="bidRain" aria-hidden="true"></canvas>
+  <div class="spotlight" id="spotlight" aria-hidden="true"></div>
+
+  <header class="site-header" aria-label="Rankly boards">
+    <a class="brand" href="index.html">Rankly<span>.</span></a>
+    <nav class="nav-links" aria-label="Boards">
+      <a href="index.html">Profiles</a>
+      <a href="showcase.html" aria-current="page">Showcase</a>
+    </nav>
+  </header>
+
+  <div class="live-ticker" id="liveTicker" aria-label="Recent bids">
+    <div class="live-ticker-track" id="liveTickerTrack"><span class="tick"><span class="tick-dot"></span><span>Live board — new bids stream here in real time</span></span></div>
+  </div>
+
+  <div class="topbar-status">
+    <div class="status-pill" id="statusPill" data-state="syncing"><span class="dot-live"></span><span id="statusPillText">Connecting to database…</span></div>
+    <div class="reset-countdown" id="resetCountdown" aria-live="off"></div>
+  </div>
+
+  <nav class="cat-bar" id="catBar" aria-label="Sections">
+    <a href="showcase.html" aria-current="page">All work</a>
+    <a href="index.html">Profiles</a>
+    <a href="replay.html">Replay</a>
+    <a href="#rules">Rules</a>
+    <a href="#accountDetails">UPI payments</a>
+    <a href="#hallOfFame">Hall of Fame</a>
+    <a href="#duelArena">Duels</a>
+  </nav>
+
+  <section class="segment" role="tablist" aria-label="Ranking period">
+    <div class="segment-track">
+      <button class="view-tab" role="tab" aria-selected="true" data-view="all">This week</button>
+      <button class="view-tab" role="tab" aria-selected="false" data-view="weeks">Previous weeks</button>
+    </div>
+  </section>
+
+  <div class="snipe-banner" id="snipeBanner" hidden></div>
+
+  <main class="page">
+    <section class="hero-claim" aria-label="Showcase your work">
+      <div class="hero-copy">
+        <h1>Rank your <span>work</span> at the top for
+          <span class="hero-price-inline">
+            <button type="button" id="heroMinus" aria-label="Decrease bid by one hundred rupees">−</button>
+            <span id="heroPrice">₹100</span>
+            <button type="button" id="heroPlus" aria-label="Increase bid by one hundred rupees">+</button>
+          </span>
+        </h1>
+        <p>GitHub projects, Instagram creations, LinkedIn work — list what you built and outbid others. Verified bids only.</p>
+      </div>
+      <div class="hero-form">
+        <input id="heroPlatformInput" list="heroPlatforms" placeholder="Platform (GitHub…)" maxlength="40" aria-label="Platform" />
+        <datalist id="heroPlatforms">
+          <option value="GitHub"></option>
+          <option value="Instagram"></option>
+          <option value="LinkedIn"></option>
+          <option value="Other"></option>
+        </datalist>
+        <button type="button" id="heroClaim">Showcase my work →</button>
+      </div>
+    </section>
+
+    <div class="layout">
+      <section class="board-card" aria-label="Showcase leaderboard">
+        <div class="board-head">
+          <h2>Showcase</h2>
+          <label class="search">
+            <span class="sr-only" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0">Search work</span>
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="m16 16 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <input id="searchInput" type="search" placeholder="Search titles, creators, descriptions…" autocomplete="off" />
+          </label>
+        </div>
+        <div class="filter-pills" id="platforms" aria-label="Filter by platform"></div>
+        <div class="weeks-bar" id="weeksBar" hidden><div class="week-pills" id="weekPills" role="tablist" aria-label="Previous weeks"></div></div>
+        <div class="weeks-summary" id="weeksSummary" hidden></div>
+        <div class="leaderboard" id="leaderboard" aria-live="polite"></div>
+        <div class="weeks-list" id="weeksList" hidden></div>
+        <nav class="pagination" id="pagination" aria-label="Showcase pages">
+          <div class="page-btns" id="pageButtons"></div>
+          <div class="results-note" id="resultsNote">Showing 0 of 0</div>
+        </nav>
+      </section>
+
+      <aside class="sidebar" aria-label="Sidebar">
+        <div class="side-claim" id="claim">
+          <h3>Rank your work</h3>
+          <p>Link a project or creation, pick your bid. Beat an existing bid and your work moves above it — instantly visible at the top.</p>
+        </div>
+        <form id="claimForm">
+          <div class="field">
+            <label for="titleInput">Work title</label>
+            <input id="titleInput" required maxlength="80" placeholder="My open-source dashboard" />
+          </div>
+          <div class="field">
+            <label for="creatorInput">Creator name</label>
+            <input id="creatorInput" required maxlength="60" placeholder="Aarav Sharma" />
+          </div>
+          <div class="field">
+            <label for="platformInput">Platform</label>
+            <select id="platformInput" required>
+              <option value="GitHub">GitHub</option>
+              <option value="Instagram">Instagram</option>
+              <option value="LinkedIn">LinkedIn</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="linkInput">Link to the work</label>
+            <input id="linkInput" required inputmode="url" maxlength="300" placeholder="github.com/you/project" />
+          </div>
+          <div class="field">
+            <label for="descInput">Short description</label>
+            <input id="descInput" maxlength="300" placeholder="What did you build or create?" />
+          </div>
+          <div class="field">
+            <label for="bidInput">Your bid (INR)</label>
+            <div class="bid-stepper">
+              <button type="button" id="bidMinus" aria-label="Decrease bid by one hundred rupees">−</button>
+              <input id="bidInput" type="number" inputmode="numeric" min="1" max="999" step="100" value="100" required />
+              <button type="button" id="bidPlus" aria-label="Increase bid by one hundred rupees">+</button>
+            </div>
+            <div class="bid-hint"><span>₹1 – ₹999</span><span id="rankEstimate">Estimated rank #1</span></div>
+            <div class="bid-hint"><span id="topBidHint"></span></div>
+          </div>
+          <div class="field">
+            <label>Payment method</label>
+            <div class="method-fixed"><strong>UPI · automatic verification</strong><span>Pay to our UPI QR, then submit your transaction ID</span></div>
+          </div>
+          <button class="claim-btn" type="submit" id="claimSubmit">Review bid →</button>
+          <div class="payment-note">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="2"/></svg>
+            <span id="paymentNoteText">Pay via UPI in the review step, then submit your transaction ID. Our system detects your payment automatically and your work goes live on its own.</span>
+          </div>
+        </form>
+      </aside>
+    </div>
+
+    <section aria-label="Latest activity">
+      <div class="activity-head"><h2>Latest activity</h2></div>
+      <div class="activity-chips" id="activityList"></div>
+    </section>
+
+    <section class="stats-grid" aria-label="Site statistics">
+      <p class="stats-intro">Rankly is a <span class="accent-text">pay-to-rank board</span> for great work — every number below is live.</p>
+      <div class="stat-card">
+        <span class="stat-icon">🎨</span>
+        <span class="stat-num" id="worksStat">0</span>
+        <span class="stat-label">Works showcased</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-icon">💰</span>
+        <span class="stat-num" id="revenueStat">₹0</span>
+        <span class="stat-label">Total bids</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-icon">👁</span>
+        <span class="stat-num" id="visitorsStat">0</span>
+        <span class="stat-label">Visitors</span>
+      </div>
+    </section>
+
+    <section class="payment-setup" id="accountDetails" aria-labelledby="paymentSetupTitle">
+      <div class="payment-setup-head">
+        <div>
+          <h2 id="paymentSetupTitle">Payments</h2>
+          <p>Direct UPI for showcase bids — every payment verified automatically.</p>
+        </div>
+        <span class="setup-status" id="payModeBadge">CHECKING…</span>
+      </div>
+      <div class="payment-setup-grid">
+        <div class="account-details">
+          <div class="account-detail"><span>Merchant</span><strong>Rankly</strong></div>
+          <div class="account-detail"><span>Method</span><strong>UPI · automatic verification</strong></div>
+          <div class="account-detail"><span>UPI ID</span><strong id="upiIdDetail">sochai@ptyes</strong></div>
+          <div class="account-detail"><span>Settlement currency</span><strong>INR · Indian rupees</strong></div>
+          <div class="account-detail"><span>Verification</span><strong>Automatic — work goes live on its own</strong></div>
+        </div>
+        <aside class="mock-details" aria-label="How it works">
+          <h3>How showcasing works</h3>
+          <p>Your work goes live automatically once our system detects your UPI payment — usually within minutes.</p>
+          <div class="mock-line"><span>Step 1</span><strong>Link your work &amp; bid</strong></div>
+          <div class="mock-line"><span>Step 2</span><strong>Pay via UPI, submit transaction ID</strong></div>
+          <div class="mock-line"><span>Step 3</span><strong>Auto-verified → ranked live</strong></div>
+        </aside>
+      </div>
+      <p class="setup-note">Showcase bids are non-refundable once the rank is published. See the Terms for the full policy.</p>
+    </section>
+
+    <section class="duels" id="duelArena" hidden>
+      <h2>Duel Arena</h2>
+      <p class="duels-sub">Challenge a rival piece of work to a 24-hour bid duel. Biggest bid increase wins.</p>
+      <div class="duel-list" id="duelList"></div>
+      <div class="duel-history" id="duelHistory"></div>
+    </section>
+
+    <section class="hall-of-fame" id="hallOfFame" hidden>
+      <h2>Hall of Fame</h2>
+      <p class="hof-sub">Weekly champions, forever. Win a week and your work stays here.</p>
+      <div class="hof-strip" id="hofStrip"></div>
+    </section>
+
+    <section class="rules-strip" id="rules">
+      <div class="rules-title"><h2>How ranks work</h2><p>Three plain rules. No mystery scoring, no hidden boosts.</p></div>
+      <div class="rules-grid">
+        <article class="rule"><div class="rule-num">01</div><h3>Bid in public</h3><p>Every showcased work displays the amount paid beside it.</p></article>
+        <article class="rule"><div class="rule-num">02</div><h3>Move on merit</h3><p>A higher bid moves above lower bids once your payment is verified.</p></article>
+        <article class="rule"><div class="rule-num">03</div><h3>Earn the click</h3><p>Rank buys attention, not affection. Great work wins the click.</p></article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="page">
+    <span>© 2026 Rankly. Bid for your rank.</span>
+    <nav class="footer-links" aria-label="Legal">
+      <a href="#rules">Ranking rules</a><span class="sep" aria-hidden="true">·</span>
+      <a href="https://docs.google.com/spreadsheets/d/1FSWiEoLh8AgADL8jiFye4wOL5lt1KwjYjwSeeTBuy0o/edit" target="_blank" rel="noopener">Database</a><span class="sep" aria-hidden="true">·</span>
+      <button type="button" data-info="terms">Terms</button><span class="sep" aria-hidden="true">·</span>
+      <button type="button" data-info="privacy">Privacy</button>
+      <span class="data-pill" id="dataPill" data-state="syncing"><span class="dot-live"></span><span id="dataPillText">Connecting…</span></span>
+    </nav>
+  </footer>
+
+  <dialog class="modal" id="checkoutDialog" aria-labelledby="checkoutTitle">
+    <div class="modal-inner">
+      <span class="modal-label">PAY WITH UPI</span>
+      <h2 id="checkoutTitle">Complete your bid</h2>
+      <p id="checkoutIntroManual">Pay the exact bid amount from any UPI app, then submit your transaction ID below. Our system detects your payment automatically and your work goes live on its own.</p>
+      <p id="checkoutIntroRzp" hidden>Pay securely below with UPI, cards or netbanking. Your work goes live the moment the payment succeeds.</p>
+      <div class="order-summary">
+        <div class="order-line"><span id="reviewLabel1">Work</span><strong id="reviewValue1"></strong></div>
+        <div class="order-line"><span id="reviewLabel2">Creator</span><strong id="reviewValue2"></strong></div>
+        <div class="order-line"><span id="reviewLabel3">Bid amount</span><strong id="reviewValue3"></strong></div>
+        <div class="order-line"><span id="reviewLabel4">Estimated rank</span><strong id="reviewValue4"></strong></div>
+      </div>
+      <div class="rzp-pay" id="rzpPaySection" hidden>
+        <button class="modal-confirm rzp-btn" id="razorpayPayBtn" type="button">Pay securely</button>
+        <p class="fineprint">Processed securely by Razorpay — UPI, cards & netbanking accepted.</p>
+        <div class="modal-actions">
+          <button class="modal-cancel" id="cancelCheckoutRzp" type="button">Go back</button>
+        </div>
+      </div>
+      <div id="manualPaySection">
+      <div class="upi-pay">
+        <img src="upi-qr.png" alt="Rankly UPI QR code" class="upi-qr" />
+        <div class="upi-pay-info">
+          <div class="upi-id"><span>UPI ID</span><strong id="upiIdText">sochai@ptyes</strong><button type="button" id="copyUpiId" class="copy-btn">Copy</button></div>
+          <p class="fineprint">Pay exactly <strong id="upiAmount"></strong>. After paying, note the 12-digit transaction ID / UTR from your payment app.</p>
+        </div>
+      </div>
+      <div class="field">
+        <label for="utrInput">UPI transaction ID (UTR)</label>
+        <input id="utrInput" type="text" inputmode="text" autocomplete="off" placeholder="e.g. 412345678901" maxlength="32" />
+      </div>
+      <div class="modal-actions">
+        <button class="modal-cancel" id="cancelCheckout" type="button">Go back</button>
+        <button class="modal-confirm" id="confirmCheckout" type="button">I've paid — submit claim</button>
+      </div>
+      </div>
+      <p class="fineprint">Showcase bids are non-refundable once published. Full policy in the Terms.</p>
+    </div>
+  </dialog>
+
+  <dialog class="modal" id="verifyDialog" aria-labelledby="verifyTitle">
+    <div class="modal-inner">
+      <span class="modal-label">PAYMENT VERIFICATION</span>
+      <h2 id="verifyTitle">Waiting for your payment…</h2>
+      <p id="verifyText">Your claim is recorded. We’re watching for your bank’s payment confirmation — this usually takes under a minute. Keep this open.</p>
+      <div class="verify-status" id="verifySpinner" aria-hidden="true"><span class="spinner"></span></div>
+      <div class="modal-actions">
+        <button class="modal-cancel" id="verifyClose" type="button">Close</button>
+        <button class="modal-confirm" id="verifyViewBoard" type="button" hidden>View leaderboard</button>
+      </div>
+      <p class="fineprint">No need to resubmit — your rank goes live automatically once the payment is detected.</p>
+    </div>
+  </dialog>
+
+  <dialog class="modal" id="infoDialog" aria-labelledby="infoTitle">
+    <div class="modal-inner">
+      <span class="modal-label">PLAIN ENGLISH</span>
+      <h2 id="infoTitle"></h2>
+      <p id="infoBody"></p>
+      <div id="infoDocWrap" hidden>
+        <iframe id="infoDocFrame" title="Policy document" loading="lazy"></iframe>
+        <a id="infoDocLink" href="#" target="_blank" rel="noopener">Open in Google Drive ↗</a>
+      </div>
+      <div class="modal-actions" style="grid-template-columns:1fr"><button class="modal-confirm" id="closeInfo" type="button">Got it</button></div>
+    </div>
+  </dialog>
+
+  <dialog class="modal" id="duelDialog" aria-labelledby="duelTitle">
+    <form method="dialog" class="modal-card" id="duelForm">
+      <h3 id="duelTitle">Challenge to a duel</h3>
+      <p class="modal-sub" id="duelSub">24 hours. Biggest bid increase wins.</p>
+      <div class="field">
+        <label for="duelChallenger">Your work</label>
+        <select id="duelChallenger" required></select>
+      </div>
+      <div class="field">
+        <label>Opponent</label>
+        <div class="duel-opponent" id="duelOpponent">—</div>
+      </div>
+      <p class="form-error" id="duelError" hidden></p>
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost" id="duelCancel">Cancel</button>
+        <button type="submit" class="btn-primary" id="duelSubmit">Start duel ⚔</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="shared.js"></script>
+  <script>
+    // ---- Showcase board ----
+    // No demo data: the board starts empty and is filled from /api/leaderboard
+    // (falling back to a live read of the sheet).
+    let works = [];
+    let liveLoaded = false;
+    let serverSnipe = null;
+    let duelsCache = [];
+    let snipeTimer = null;
+    let snipeOrder = [];
+
+    let platform = 'All';
+    let search = '';
+    let page = 1;
+    const perPage = 5;
+    const platforms = ['All', 'GitHub', 'Instagram', 'LinkedIn', 'Other'];
+    const PLATFORM_EMOJI = { All: '🎨', GitHub: '💻', Instagram: '📸', LinkedIn: '💼', Other: '✨' };
+    let activity = [];
+    let showView = 'all';        // 'all' = this week, 'weeks' = previous weeks
+    let weeksCache = null;
+    let activeWeek = null;
+
+    async function loadWeeks() {
+      if (weeksCache) return weeksCache;
+      try { weeksCache = await fetchWeeks(); }
+      catch { weeksCache = { weeks: [] }; }
+      if (!activeWeek && weeksCache.weeks.length) {
+        activeWeek = weeksCache.weeks[weeksCache.weeks.length - 1].week;
+      }
+      return weeksCache;
+    }
+
+    function workRowHTML(w, trueRank) {
+      return `<article class="rank-row${w.new ? ' just-added' : ''}" data-key="${escapeHTML(w.key || '')}">
+        <div class="rank ${rankClass(trueRank)}">${trueRank}</div>
+        <div class="avatar" style="${avatarStyle(w.title)}" aria-hidden="true">${escapeHTML(initialsOf(w.title))}</div>
+        <div class="listing-main">
+          <div class="listing-title-line"><h3 class="listing-title">${escapeHTML(w.title)}</h3><span class="platform-badge ${platformClass(w.platform)}">${escapeHTML(w.platform)}</span></div>
+          <div class="row-meta">#${trueRank} · ${money(w.bid)} · by ${escapeHTML(w.creator)} · ${w.clicks.toLocaleString()} clicks</div>
+          <p class="creator-line">by <strong>${escapeHTML(w.creator)}</strong></p>
+          ${w.description ? `<p class="work-desc">${escapeHTML(w.description)}</p>` : ''}
+          <div class="listing-meta"><span>${eyeIcon}${w.clicks.toLocaleString()} clicks</span><span>${arrowIcon}${escapeHTML(w.link)}</span></div>
+        </div>
+        <div class="bid"><strong>${money(w.bid)}</strong><span>rank bid</span>
+          <div class="row-actions">
+            <button class="icon-btn" type="button" data-duel-key="${escapeHTML(w.key || '')}" data-duel-name="${escapeHTML(w.title)}" title="Challenge to a 24h bid duel" aria-label="Challenge ${escapeHTML(w.title)} to a duel">⚔</button>
+            <button class="icon-btn" type="button" data-share-work="${escapeHTML(w.title)}" title="Share this rank" aria-label="Share ${escapeHTML(w.title)}'s rank"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v13M7 8l5-5 5 5M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+        </div>
+      </article>`;
+    }
+
+    // Group the top-N rows (by true rank) inside one salmon card, per design.md §5.5.
+    function groupTopRows(items) {
+      const top = items.filter(x => x.rank <= 3).map(x => x.html).join('');
+      const rest = items.filter(x => x.rank > 3).map(x => x.html).join('');
+      return (top ? `<div class="top-board">${top}</div>` : '') + rest;
+    }
+
+    function renderWeeks() {
+      const weeks = (weeksCache && weeksCache.weeks) || [];
+      $('#weeksBar').hidden = false;
+      $('#weeksSummary').hidden = false;
+      $('#weeksList').hidden = false;
+      $('#leaderboard').hidden = true;
+      $('#pagination').hidden = true;
+      $('#resultsNote').hidden = true;
+      $('#platforms').hidden = true;
+      if (!weeks.length) {
+        $('#weekPills').innerHTML = '';
+        $('#weeksSummary').innerHTML = '';
+        $('#weeksList').innerHTML = '<div class="empty">No previous weeks yet — rankings reset every Sunday, and past winners will appear here.</div>';
+        return;
+      }
+      const w = weeks.find(x => x.week === activeWeek) || weeks[weeks.length - 1];
+      activeWeek = w.week;
+      $('#weekPills').innerHTML = weeks.map(x =>
+        `<button class="week-pill" type="button" data-week="${x.week}" aria-pressed="${x.week === w.week}">Week ${x.week}</button>`).join('');
+      const range = w.start && w.end ? `${fmtWeekDate(w.start)} – ${fmtWeekDate(w.end)}` : '';
+      $('#weeksSummary').innerHTML = `<strong>Week ${w.week}</strong>${range ? ' · ' + escapeHTML(range) : ''} · ${w.workCount} work${w.workCount === 1 ? '' : 's'}`;
+      $('#weeksList').innerHTML = w.works.length ? groupTopRows(w.works.map((work, i) => {
+        const rank = work.rank || i + 1;
+        return { rank, html: `<article class="rank-row">
+          <div class="rank ${rankClass(rank)}">${rank}</div>
+          <div class="avatar" style="${avatarStyle(work.title)}" aria-hidden="true">${escapeHTML(initialsOf(work.title))}</div>
+          <div class="listing-main">
+            <div class="listing-title-line"><h3 class="listing-title">${escapeHTML(work.title)}</h3><span class="platform-badge ${platformClass(work.platform)}">${escapeHTML(work.platform)}</span>${rank === 1 ? '<span class="champion-badge">Champion</span>' : ''}</div>
+            <div class="row-meta">#${rank} · ${money(work.bid)} · by ${escapeHTML(work.creator)}</div>
+            <p class="creator-line">by <strong>${escapeHTML(work.creator)}</strong></p>
+          </div>
+          <div class="bid"><strong>${money(work.bid)}</strong><span>rank bid</span></div>
+        </article>` };
+      })) : '<div class="empty">No work ranked that week.</div>';
+    }
+
+    function platformClass(p) {
+      return { GitHub: 'pf-github', Instagram: 'pf-instagram', LinkedIn: 'pf-linkedin' }[p] || 'pf-other';
+    }
+
+    function rowsToWorks(rows) {
+      return rows.slice(1)
+        .filter(r => r.length > 2 && r[1] && r[1].trim())
+        .map(r => ({
+          title: r[1].trim(), creator: (r[2] || '').trim(), platform: (r[3] || '').trim() || 'Other',
+          link: (r[4] || '').trim(), description: (r[5] || '').trim(),
+          bid: toNum(r[6]), clicks: toNum(r[7]), age: (r[8] || '').trim()
+        }))
+        .sort((a, b) => b.bid - a.bid);
+    }
+
+    function rowsToActivity(rows) {
+      return rows.slice(1)
+        .filter(r => r.length > 1 && r[1] && r[1].trim())
+        .map(r => ({ time: (r[0] || '').trim(), name: r[1].trim(), action: (r[2] || '').trim() }));
+    }
+
+    function applyLiveStats(rows) {
+      const map = {};
+      rows.slice(1).forEach(r => { if (r[0] && r[0].trim()) map[r[0].trim()] = r[1]; });
+      if (map['Visitors']) $('#visitorsStat').textContent = toNum(map['Visitors']).toLocaleString('en-IN');
+      if (map['Revenue (INR)'] !== undefined) $('#revenueStat').textContent = money(toNum(map['Revenue (INR)']));
+      $('#worksStat').textContent = toNum(map['Works showcased'] ?? works.length).toLocaleString('en-IN');
+    }
+
+    function syncStatusPill(state, text) {
+      ['statusPill', 'dataPill'].forEach(id => {
+        const pill = $('#' + id);
+        if (!pill) return;
+        pill.dataset.state = state;
+      });
+      const t = $('#statusPillText'); if (t) t.textContent = text;
+      const d = $('#dataPillText'); if (d) d.textContent = text;
+    }
+
+    async function initLiveData(highlightTitle) {
+      syncStatusPill('syncing', 'Connecting to database…');
+      // Primary path: server-side board API (no public sheet sharing needed).
+      try {
+        const res = await fetch('/api/leaderboard', { cache: 'no-store' });
+        if (!res.ok) throw new Error('board API failed: ' + res.status);
+        applyBoardPayload(await res.json(), highlightTitle);
+        syncStatusPill('live', 'Live database');
+        return;
+      } catch (apiErr) { /* fall through to gviz */ }
+      try {
+        const [workRows, activityRows, statsRows] = await Promise.all([
+          fetchSheet(RANKLY_DB.tabs.showcase),
+          fetchSheet(RANKLY_DB.tabs.activity),
+          fetchSheet(RANKLY_DB.tabs.stats)
+        ]);
+        works = rowsToWorks(workRows);
+        liveLoaded = true;
+        activity = rowsToActivity(activityRows);
+        applyLiveStats(statsRows);
+        afterBoardLoad(highlightTitle);
+        syncStatusPill('live', 'Live database');
+      } catch (err) {
+        liveLoaded = false;
+        syncStatusPill('error', 'Could not reach the database — check your connection, then reload.');
+        renderPlatforms(); renderLeaderboard(); renderActivity();
+      }
+    }
+
+    // Apply a /api/leaderboard payload (showcase slice) to page state.
+    function applyBoardPayload(data, highlightTitle) {
+      works = (data.showcase || []).map(w => ({ ...w, key: w.key || workKeyOf(w) }));
+      liveLoaded = true;
+      activity = (data.activity || []).map(a => ({ time: a.time || '', name: a.name || '', action: a.action || '' }));
+      serverSnipe = data.snipe || null;
+      const st = data.stats || {};
+      if (st.visitors) $('#visitorsStat').textContent = Number(st.visitors).toLocaleString('en-IN');
+      if (st.revenue != null) $('#revenueStat').textContent = money(st.revenue);
+      $('#worksStat').textContent = Number(st.works != null ? st.works : works.length).toLocaleString('en-IN');
+      afterBoardLoad(highlightTitle);
+    }
+
+    // Shared tail after the board loads from any source.
+    function afterBoardLoad(highlightTitle) {
+      works.forEach(w => { if (!w.key) w.key = workKeyOf(w); });
+      if (highlightTitle) {
+        works.forEach(w => w.new = false);
+        const item = works.find(w => w.title.toLowerCase() === String(highlightTitle).toLowerCase());
+        if (item) {
+          item.new = true;
+          platform = 'All'; search = '';
+          page = Math.ceil((works.indexOf(item) + 1) / perPage);
+          $('#searchInput').value = '';
+          setView('all');
+          renderPlatforms();
+        }
+      }
+      renderPlatforms(); renderLeaderboard(); renderActivity();
+      loadDuels();
+      startSnipeLoop();
+    }
+
+    function renderPlatforms() {
+      $('#platforms').innerHTML = platforms.map(p =>
+        `<button class="chip" type="button" aria-pressed="${p === platform}" data-platform="${escapeHTML(p)}">${PLATFORM_EMOJI[p] || '✨'} ${escapeHTML(p)}</button>`).join('');
+    }
+
+    function getFiltered() {
+      return works.filter(w =>
+        (platform === 'All' || w.platform === platform) &&
+        (`${w.title} ${w.creator} ${w.description}`).toLowerCase().includes(search));
+    }
+
+    function renderLeaderboard() {
+      if (showView === 'weeks') { renderWeeks(); return; }
+      $('#weeksBar').hidden = true;
+      $('#weeksSummary').hidden = true;
+      $('#weeksList').hidden = true;
+      $('#leaderboard').hidden = false;
+      $('#pagination').hidden = false;
+      $('#resultsNote').hidden = false;
+      $('#platforms').hidden = false;
+      const filtered = getFiltered();
+      const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+      page = Math.min(page, totalPages);
+      const start = (page - 1) * perPage;
+      const shown = filtered.slice(start, start + perPage);
+      let html;
+      if (!shown.length) {
+        html = liveLoaded
+          ? '<div class="empty">No work showcased yet — be the first to rank your work at the top.</div>'
+          : '<div class="empty">No work matches that filter. Try another search.</div>';
+      } else {
+        const items = shown.map(w => { const r = works.indexOf(w) + 1; return { rank: r, html: workRowHTML(w, r) }; });
+        html = groupTopRows(items);
+      }
+      $('#leaderboard').innerHTML = html;
+      applyDuelChampionBadges(duelsCache);
+
+      const first = filtered.length ? start + 1 : 0;
+      const last = Math.min(start + perPage, filtered.length);
+      $('#resultsNote').textContent = `Showing ${first}–${last} of ${filtered.length}`;
+
+      $('#pageButtons').innerHTML = `<button class="page-btn" data-page="${page - 1}" ${page === 1 ? 'disabled' : ''} aria-label="Previous page">←</button>` +
+        Array.from({ length: totalPages }, (_, i) => `<button class="page-btn" data-page="${i + 1}" ${page === i + 1 ? 'aria-current="page"' : ''}>${i + 1}</button>`).join('') +
+        `<button class="page-btn" data-page="${page + 1}" ${page === totalPages ? 'disabled' : ''} aria-label="Next page">→</button>`;
+      updateEstimate();
+    }
+
+    function renderActivity() {
+      const el = $('#activityList');
+      el.innerHTML = activity.length
+        ? activityHTML(activity)
+        : '<span class="act-chip">No activity yet — showcases will appear here.</span>';
+      pulseNewActivity(activity);
+    }
+
+    function estimatedRank(amount) {
+      return works.filter(w => w.bid > amount).length + 1;
+    }
+
+    function updateEstimate() {
+      const amount = clampBid($('#bidInput').value);
+      $('#rankEstimate').textContent = `Estimated rank #${estimatedRank(amount)}`;
+      const hp = $('#heroPrice'); if (hp) hp.textContent = money(amount);
+      const topBid = liveLoaded && works.length ? works[0].bid : 0;
+      $('#topBidHint').textContent = topBid > 0
+        ? `Top bid is ${money(topBid)} — bid ${money(topBid + 10)}+ to take #1`
+        : '';
+    }
+
+    function adjustBid(delta) {
+      const input = $('#bidInput');
+      input.value = clampBid((Number(input.value) || 1) + delta);
+      updateEstimate();
+    }
+
+    function setView(view) {
+      showView = view; page = 1;
+      document.querySelectorAll('.view-tab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.view === view)));
+      document.body.classList.toggle('weeks-mode', view === 'weeks');
+      if (view === 'weeks') { loadWeeks().then(renderLeaderboard); }
+      else renderLeaderboard();
+    }
+
+    renderPlatforms();
+    renderLeaderboard();
+    renderActivity();
+    initLiveData();
+    initPayments();
+    wireCheckout();
+    wireVerifyDialog();
+    wireInfoDialogs();
+    wireDuelDialog();
+    startResetCountdown($('#resetCountdown'));
+    loadHallOfFame();
+
+    async function loadHallOfFame() {
+      let weeks = [];
+      try { weeks = (await fetchWeeks()).weeks || []; }
+      catch { return; }
+      const champs = weeks.filter(w => w.works && w.works.length);
+      if (!champs.length) return;
+      $('#hallOfFame').hidden = false;
+      $('#hofStrip').innerHTML = champs.slice().reverse().map(w => {
+        const c = w.works[0];
+        const range = w.start && w.end ? `${fmtWeekDate(w.start)} – ${fmtWeekDate(w.end)}` : '';
+        return `<article class="hof-card">
+          <div class="hof-week">Week ${w.week}${range ? ' · ' + escapeHTML(range) : ''}</div>
+          <div class="hof-name">${escapeHTML(c.title)}</div>
+          <div class="hof-detail">by ${escapeHTML(c.creator)} · ${escapeHTML(c.platform)}</div>
+          <div class="hof-bid">${money(c.bid)}</div>
+        </article>`;
+      }).join('');
+    }
+
+    // ---------- Snipe Hour (showcase) ----------
+    function currentResetAt() {
+      if (serverSnipe && serverSnipe.resetAt) return serverSnipe.resetAt;
+      return new Date(Date.now() + msUntilSundayReset(Date.now())).toISOString();
+    }
+
+    function renderSnipeBanner() {
+      const v = snipeView(currentResetAt(), Date.now());
+      const el = $('#snipeBanner');
+      const html = snipeBannerHTML(v);
+      el.hidden = !html;
+      if (html) {
+        const strong = el.querySelector('.snipe-text strong');
+        if (strong && v.phase === 'live') strong.textContent = formatSnipeLeft(v.msLeft);
+        else if (el.innerHTML !== html) el.innerHTML = html;
+      }
+      document.body.classList.toggle('snipe-live-mode', v.phase !== 'idle');
+      return v;
+    }
+
+    function startSnipeLoop() {
+      if (snipeTimer) clearInterval(snipeTimer);
+      snipeOrder = works.map(w => w.key);
+      renderSnipeBanner();
+      snipeTimer = setInterval(tickSnipe, 10000);
+    }
+
+    async function tickSnipe() {
+      const v = renderSnipeBanner();
+      if (v.phase === 'idle') return;
+      try {
+        const res = await fetch('/api/leaderboard', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        const prev = snipeOrder;
+        serverSnipe = data.snipe || serverSnipe;
+        applyBoardPayload(data);
+        const next = works.map(w => w.key);
+        animateRankMoves(prev, next);
+        snipeOrder = next;
+      } catch (e) { /* hold last known board */ }
+    }
+
+    function animateRankMoves(prev, next) {
+      const pos = new Map(next.map((k, i) => [k, i]));
+      document.querySelectorAll('#leaderboard .rank-row[data-key]').forEach(row => {
+        const before = prev.indexOf(row.dataset.key);
+        const after = pos.get(row.dataset.key);
+        if (before === -1 || after === undefined || before === after) return;
+        row.classList.remove('snipe-up', 'snipe-down');
+        void row.offsetWidth;
+        row.classList.add(after < before ? 'snipe-up' : 'snipe-down');
+      });
+    }
+
+    // ---------- Duel Arena (showcase) ----------
+    async function loadDuels() {
+      try {
+        const res = await fetch('/api/duels', { cache: 'no-store' });
+        if (!res.ok) throw new Error('duels failed');
+        duelsCache = (await res.json()).duels || [];
+      } catch (e) { duelsCache = []; }
+      renderDuels();
+    }
+
+    function currentBidFor(key, fallback) {
+      const w = works.find(x => x.key === key);
+      return w ? w.bid : fallback;
+    }
+
+    function duelEndsIn(ends) {
+      const ms = new Date(ends.replace(' ', 'T')).getTime() - Date.now();
+      if (!Number.isFinite(ms) || ms <= 0) return 'ended';
+      const h = Math.floor(ms / 3600e3), m = Math.floor((ms % 3600e3) / 6e4);
+      return h > 0 ? `${h}h ${m}m left` : `${m}m left`;
+    }
+
+    function renderDuels() {
+      const sec = $('#duelArena');
+      if (!duelsCache.length) { sec.hidden = true; return; }
+      sec.hidden = false;
+      const active = duelsCache.filter(d => d.status === 'active');
+      const done = duelsCache.filter(d => d.status !== 'active');
+      $('#duelList').innerHTML = active.length ? active.map(d => {
+        const cb = currentBidFor(d.challengerKey, d.cStart);
+        const ob = currentBidFor(d.opponentKey, d.oStart);
+        const bars = duelBars(cb, ob);
+        return `<div class="duel-card">
+          <div class="duel-head"><span class="duel-vs">⚔ LIVE DUEL</span><span class="duel-time">${escapeHTML(duelEndsIn(d.ends))}</span></div>
+          <div class="duel-side"><span class="duel-name">${escapeHTML(d.challenger)}</span><span class="duel-bid">${money(cb)}</span></div>
+          <div class="duel-bar"><span class="duel-fill c" style="width:${bars.cPct}%"></span></div>
+          <div class="duel-side"><span class="duel-name">${escapeHTML(d.opponent)}</span><span class="duel-bid">${money(ob)}</span></div>
+          <div class="duel-bar"><span class="duel-fill o" style="width:${bars.oPct}%"></span></div>
+          <p class="duel-note">Biggest bid increase in 24h wins. Bid on either entry to tip it.</p>
+        </div>`;
+      }).join('') : '<div class="empty">No live duels — challenge a rival from any rank row.</div>';
+      $('#duelHistory').innerHTML = done.length
+        ? `<h3 class="duel-history-title">Recent results</h3><div class="duel-results">` + done.slice(0, 5).map(d =>
+          `<div class="duel-result"><span>⚔ ${escapeHTML(d.challenger)} vs ${escapeHTML(d.opponent)}</span><strong>${d.winner === 'draw' ? 'Draw' : '🏆 ' + escapeHTML(d.winner)}</strong></div>`
+        ).join('') + `</div>` : '';
+      applyDuelChampionBadges(duelsCache);
+    }
+
+    let duelOpponentKey = '', duelOpponentName = '';
+    function openDuelDialog(opponentKey, opponentName) {
+      duelOpponentKey = opponentKey; duelOpponentName = opponentName;
+      if (!works.length) { toast('The board is still loading — try again in a moment.'); return; }
+      $('#duelChallenger').innerHTML = works.map(w =>
+        `<option value="${escapeHTML(w.key)}"${w.key === opponentKey ? ' disabled' : ''}>${escapeHTML(w.title)} — ${money(w.bid)}</option>`
+      ).join('');
+      $('#duelOpponent').textContent = opponentName;
+      $('#duelSub').textContent = `You vs ${opponentName} — 24 hours, biggest bid increase wins.`;
+      $('#duelError').hidden = true;
+      const dlg = $('#duelDialog');
+      if (typeof dlg.showModal === 'function') dlg.showModal();
+    }
+
+    function wireDuelDialog() {
+      $('#duelCancel').addEventListener('click', () => $('#duelDialog').close());
+      $('#duelForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const challengerKey = $('#duelChallenger').value;
+        const errEl = $('#duelError');
+        errEl.hidden = true;
+        $('#duelSubmit').disabled = true;
+        try {
+          const res = await fetch('/api/duels', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ challengerKey, opponentKey: duelOpponentKey }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Could not start the duel.');
+          $('#duelDialog').close();
+          toast(`Duel started — ${duelOpponentName} has 24 hours to answer with bids.`);
+          loadDuels();
+        } catch (err) {
+          errEl.textContent = err.message;
+          errEl.hidden = false;
+        } finally {
+          $('#duelSubmit').disabled = false;
+        }
+      });
+    }
+
+    // ---------- Wiring ----------
+    document.querySelectorAll('.view-tab').forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.view)));
+    $('#weekPills').addEventListener('click', e => {
+      const pill = e.target.closest('[data-week]');
+      if (!pill) return;
+      activeWeek = Number(pill.dataset.week); renderWeeks();
+    });
+    $('#leaderboard').addEventListener('click', e => {
+      const duelBtn = e.target.closest('[data-duel-key]');
+      if (duelBtn) { openDuelDialog(duelBtn.dataset.duelKey, duelBtn.dataset.duelName); return; }
+      const shareBtn = e.target.closest('[data-share-work]');
+      if (shareBtn) {
+        const w = works.find(x => x.title === shareBtn.dataset.shareWork);
+        if (w) {
+          const trueRank = works.indexOf(w) + 1;
+          shareRankCard({
+            rank: trueRank, name: w.title,
+            sub: `by ${w.creator} · ${w.platform}`,
+            bid: w.bid, boardLabel: 'Showcase · This week',
+          }).catch(() => toast('Could not create the rank card.'));
+        }
+      }
+    });
+    $('#platforms').addEventListener('click', e => {
+      const btn = e.target.closest('[data-platform]');
+      if (!btn) return;
+      platform = btn.dataset.platform; page = 1; renderPlatforms(); renderLeaderboard();
+    });
+    $('#searchInput').addEventListener('input', e => { search = e.target.value.trim().toLowerCase(); page = 1; renderLeaderboard(); });
+    $('#pageButtons').addEventListener('click', e => {
+      const btn = e.target.closest('[data-page]'); if (!btn || btn.disabled) return;
+      page = Number(btn.dataset.page); renderLeaderboard(); document.querySelector('.board-head').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    $('#bidMinus').addEventListener('click', () => adjustBid(-100));
+    $('#bidPlus').addEventListener('click', () => adjustBid(100));
+    $('#bidInput').addEventListener('input', updateEstimate);
+    $('#heroMinus').addEventListener('click', () => adjustBid(-100));
+    $('#heroPlus').addEventListener('click', () => adjustBid(100));
+    $('#heroClaim').addEventListener('click', () => {
+      const p = $('#heroPlatformInput').value.trim();
+      if (p) { $('#platformInput').value = platforms.includes(p) ? p : 'Other'; }
+      document.querySelector('#claim').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      $('#titleInput').focus({ preventScroll: true });
+    });
+
+    $('#claimForm').addEventListener('submit', e => {
+      e.preventDefault();
+      if (!paymentsReady()) {
+        showToast('Payments are not configured yet. Please try again later.');
+        return;
+      }
+      const title = $('#titleInput').value.trim();
+      const creator = $('#creatorInput').value.trim();
+      const platformV = $('#platformInput').value;
+      let link = $('#linkInput').value.trim();
+      const description = $('#descInput').value.trim();
+      const bid = clampBid($('#bidInput').value);
+      if (!title || !creator) { showToast('Please add the work title and creator name.'); return; }
+      if (link && !/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(link)) link = 'https://' + link;
+      try { const u = new URL(link); if (!/^https?:$/.test(u.protocol) || !u.hostname.includes('.')) throw 0; }
+      catch { showToast('Please add a valid link to the work.'); return; }
+      openCheckout({
+        title: 'Complete your bid',
+        summary: [
+          ['Work', title],
+          ['Creator', `${creator} · ${platformV}`],
+          ['Bid amount', money(bid)],
+          ['Estimated rank', `#${estimatedRank(bid)}`]
+        ],
+        amount: bid,
+        body: { board: 'showcase', name: title, headline: creator, platform: platformV, link, description, bid },
+        afterSubmit: () => {
+          $('#claimForm').reset(); $('#bidInput').value = 100; updateEstimate();
+          initLiveData(title);
+        }
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#f5f1e8" />
+  <link rel="icon" href="data:," />
+  <title>Rankly — Student Leaderboard</title>
+  <meta name="description" content="A transparent, pay-to-rank leaderboard for students and job seekers. Outbid others to put your profile where recruiters look." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Archivo+Black&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="page">
+    <nav class="topnav" aria-label="Rankly boards">
+      <a class="brand" href="index.html">Rankly<em>.</em></a>
+      <div class="nav-links">
+        <a href="index.html" aria-current="page">Profiles</a>
+        <a href="showcase.html">Showcase</a>
+      </div>
+    </nav>
+    <header class="mast">
+      <div>
+        <div class="kicker"><span class="live-dot" aria-hidden="true"></span> Student leaderboard · bids update the order</div>
+        <h1>Put your profile where <span class="headline-mark">recruiters look.</span></h1>
+        <p class="intro">A transparent, pay-to-rank leaderboard for students and job seekers. List your skills, link your LinkedIn, GitHub and coding profiles — then outbid others for the top spots that hiring companies actually see.</p>
+      </div>
+      <a class="jump-button" href="#claim">Claim a rank
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M14 7l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </header>
+  </div>
+
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker-track">
+      <span>OUTBID FOR THE TOP SPOT</span><span>STUDENTS COMPETING LIVE</span><span>BIDS ARE PUBLIC</span><span>RECRUITERS ARE WATCHING</span>
+      <span>OUTBID FOR THE TOP SPOT</span><span>STUDENTS COMPETING LIVE</span><span>BIDS ARE PUBLIC</span><span>RECRUITERS ARE WATCHING</span>
+    </div>
+  </div>
+
+  <main class="page">
+    <section class="stats" aria-label="Site statistics">
+      <div class="stat"><div class="stat-label">Visitors</div><div class="stat-value" id="visitorsStat">28,640</div><div class="stat-change">+12%</div></div>
+      <div class="stat"><div class="stat-label">Revenue</div><div class="stat-value" id="revenueStat">₹0</div><div class="stat-change">live</div></div>
+      <div class="stat"><div class="stat-label">Profiles listed</div><div class="stat-value" id="profilesStat">0</div><div class="stat-change">live</div></div>
+    </section>
+
+    <section class="workbench">
+      <div class="leader-panel">
+        <div class="leader-head">
+          <div>
+            <h2>The leaderboard</h2>
+            <p>Higher bids rise. Ties favor the earliest claim.</p>
+          </div>
+          <div class="view-tabs" role="tablist" aria-label="Ranking period">
+            <button class="view-tab" role="tab" aria-selected="true" data-view="all">This week</button>
+            <button class="view-tab" role="tab" aria-selected="false" data-view="today">Today</button>
+            <button class="view-tab" role="tab" aria-selected="false" data-view="weeks">Previous weeks</button>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <label class="search">
+            <span class="sr-only" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0">Search profiles</span>
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="m16 16 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <input id="searchInput" type="search" placeholder="Search names, skills, colleges…" autocomplete="off" />
+          </label>
+          <div class="results-note" id="resultsNote">Showing 0 of 0</div>
+        </div>
+        <div class="categories" id="colleges" aria-label="Filter by college"></div>
+        <div class="leaderboard" id="leaderboard" aria-live="polite"></div>
+        <nav class="pagination" aria-label="Leaderboard pages">
+          <span class="page-summary" id="pageSummary"></span>
+          <div class="page-btns" id="pageButtons"></div>
+        </nav>
+      </div>
+
+      <aside class="side">
+        <section class="claim-card" id="claim">
+          <h2>Claim your rank</h2>
+          <p class="claim-copy">List your profile, pick your bid. Beat an existing bid and you move above it — recruiters see the top first.</p>
+          <form id="claimForm">
+            <div class="field">
+              <label for="nameInput">Full name</label>
+              <input id="nameInput" required maxlength="80" placeholder="Aarav Sharma" autocomplete="name" />
+            </div>
+            <div class="field">
+              <label for="headlineInput">Headline</label>
+              <input id="headlineInput" required maxlength="80" placeholder="Full-stack developer · React, Node" />
+            </div>
+            <div class="form-row">
+              <div class="field">
+                <label for="collegeInput">College / University</label>
+                <input id="collegeInput" maxlength="80" placeholder="IIT Bombay" />
+              </div>
+              <div class="field">
+                <label for="skillsInput">Skills</label>
+                <input id="skillsInput" maxlength="200" placeholder="Python, React, SQL" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="linkedinInput">LinkedIn URL</label>
+              <input id="linkedinInput" inputmode="url" maxlength="300" placeholder="linkedin.com/in/yourname" />
+            </div>
+            <div class="form-row">
+              <div class="field">
+                <label for="githubInput">GitHub URL</label>
+                <input id="githubInput" inputmode="url" maxlength="300" placeholder="github.com/yourname" />
+              </div>
+              <div class="field">
+                <label for="codingInput">Coding profile URL</label>
+                <input id="codingInput" inputmode="url" maxlength="300" placeholder="LeetCode / Codeforces…" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="emailInput">Email <span class="hint">(optional — used to recognise your re-bids)</span></label>
+              <input id="emailInput" type="email" maxlength="120" placeholder="you@example.com" autocomplete="email" />
+              <span class="hint">Add at least one profile link above (LinkedIn, GitHub, or coding profile).</span>
+            </div>
+            <div class="field">
+              <label for="bidInput">Your bid (INR)</label>
+              <div class="bid-stepper">
+                <button type="button" id="bidMinus" aria-label="Decrease bid by one hundred rupees">−</button>
+                <input id="bidInput" type="number" inputmode="numeric" min="1" max="999" step="100" value="100" required />
+                <button type="button" id="bidPlus" aria-label="Increase bid by one hundred rupees">+</button>
+              </div>
+              <div class="bid-hint"><span>₹1 – ₹999</span><span id="rankEstimate">Estimated rank #1</span></div>
+            </div>
+            <div class="field">
+              <label>Payment method</label>
+              <div class="method-fixed"><strong>UPI · automatic verification</strong><span>Pay to our UPI QR, then submit your transaction ID</span></div>
+            </div>
+            <button class="claim-btn" type="submit" id="claimSubmit">Review bid →</button>
+            <div class="payment-note">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="2"/></svg>
+              <span id="paymentNoteText">Pay via UPI in the review step, then submit your transaction ID. Our system detects your payment automatically and your rank goes live on its own.</span>
+            </div>
+          </form>
+        </section>
+
+        <section class="activity" aria-labelledby="activityTitle">
+          <div class="activity-head"><h3 id="activityTitle">Latest activity</h3><span class="activity-pulse" aria-hidden="true"></span></div>
+          <ol class="activity-list" id="activityList"></ol>
+        </section>
+      </aside>
+    </section>
+
+    <section class="payment-setup" id="accountDetails" aria-labelledby="paymentSetupTitle">
+      <div class="payment-setup-head">
+        <div>
+          <h2 id="paymentSetupTitle">Payments</h2>
+          <p>Direct UPI for rank bids — every payment verified automatically.</p>
+        </div>
+        <span class="setup-status" id="payModeBadge">CHECKING…</span>
+      </div>
+      <div class="payment-setup-grid">
+        <div class="account-details">
+          <div class="account-detail"><span>Merchant</span><strong>Rankly</strong></div>
+          <div class="account-detail"><span>Method</span><strong>UPI · automatic verification</strong></div>
+          <div class="account-detail"><span>UPI ID</span><strong id="upiIdDetail">sochai@ptyes</strong></div>
+          <div class="account-detail"><span>Settlement currency</span><strong>INR · Indian rupees</strong></div>
+          <div class="account-detail"><span>Verification</span><strong>Automatic — rank goes live on its own</strong></div>
+        </div>
+        <aside class="mock-details" aria-label="How it works">
+          <h3>How bidding works</h3>
+          <p>Your rank goes live automatically once our system detects your UPI payment — usually within minutes.</p>
+          <div class="mock-line"><span>Step 1</span><strong>Enter your profile &amp; bid</strong></div>
+          <div class="mock-line"><span>Step 2</span><strong>Pay via UPI, submit transaction ID</strong></div>
+          <div class="mock-line"><span>Step 3</span><strong>Auto-verified → rank goes live</strong></div>
+        </aside>
+      </div>
+      <p class="setup-note">Rank bids are non-refundable once the rank is published. See the Terms for the full policy.</p>
+    </section>
+
+    <section class="rules-strip" id="rules">
+      <div class="rules-title"><h2>How ranks work</h2><p>Three plain rules. No mystery scoring, no hidden boosts.</p></div>
+      <div class="rules-grid">
+        <article class="rule"><div class="rule-num">01</div><h3>Bid in public</h3><p>Every claimed rank displays the amount paid beside the profile.</p></article>
+        <article class="rule"><div class="rule-num">02</div><h3>Move on merit</h3><p>A higher bid moves above lower bids once your payment is verified.</p></article>
+        <article class="rule"><div class="rule-num">03</div><h3>Stand out</h3><p>Rank buys attention from recruiters. A sharp headline and real links win the click.</p></article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="page">
+    <span>© 2026 Rankly. Bid for your rank.</span>
+    <nav class="footer-links" aria-label="Legal">
+      <a href="#rules">Ranking rules</a>
+      <a href="https://docs.google.com/spreadsheets/d/1FSWiEoLh8AgADL8jiFye4wOL5lt1KwjYjwSeeTBuy0o/edit" target="_blank" rel="noopener">Database</a>
+      <button type="button" data-info="terms">Terms</button>
+      <button type="button" data-info="privacy">Privacy</button>
+      <span class="data-pill" id="dataPill" data-state="syncing"><span class="dot-live"></span><span id="dataPillText">Connecting…</span></span>
+    </nav>
+  </footer>
+
+  <dialog id="checkoutDialog" aria-labelledby="checkoutTitle">
+    <div class="modal-inner">
+      <span class="modal-label">PAY WITH UPI</span>
+      <h2 id="checkoutTitle">Complete your bid</h2>
+      <p>Pay the exact bid amount from any UPI app, then submit your transaction ID below. Our system detects your payment automatically and your rank goes live on its own.</p>
+      <div class="order-summary">
+        <div class="order-line"><span id="reviewLabel1">Profile</span><strong id="reviewValue1"></strong></div>
+        <div class="order-line"><span id="reviewLabel2">Headline</span><strong id="reviewValue2"></strong></div>
+        <div class="order-line"><span id="reviewLabel3">Bid amount</span><strong id="reviewValue3"></strong></div>
+        <div class="order-line"><span id="reviewLabel4">Estimated rank</span><strong id="reviewValue4"></strong></div>
+      </div>
+      <div class="upi-pay">
+        <img src="upi-qr.png" alt="Rankly UPI QR code" class="upi-qr" />
+        <div class="upi-pay-info">
+          <div class="upi-id"><span>UPI ID</span><strong id="upiIdText">sochai@ptyes</strong><button type="button" id="copyUpiId" class="copy-btn">Copy</button></div>
+          <p class="fineprint">Pay exactly <strong id="upiAmount"></strong>. After paying, note the 12-digit transaction ID / UTR from your payment app.</p>
+        </div>
+      </div>
+      <div class="field">
+        <label for="utrInput">UPI transaction ID (UTR)</label>
+        <input id="utrInput" type="text" inputmode="text" autocomplete="off" placeholder="e.g. 412345678901" maxlength="32" />
+      </div>
+      <div class="modal-actions">
+        <button class="modal-cancel" id="cancelCheckout" type="button">Go back</button>
+        <button class="modal-confirm" id="confirmCheckout" type="button">I've paid — submit claim</button>
+      </div>
+      <p class="fineprint">Rank bids are non-refundable once published. Full policy in the Terms.</p>
+    </div>
+  </dialog>
+
+  <dialog id="verifyDialog" aria-labelledby="verifyTitle">
+    <div class="modal-inner">
+      <span class="modal-label">PAYMENT VERIFICATION</span>
+      <h2 id="verifyTitle">Waiting for your payment…</h2>
+      <p id="verifyText">Your claim is recorded. We’re watching for your bank’s payment confirmation — this usually takes under a minute. Keep this open.</p>
+      <div class="verify-status" id="verifySpinner" aria-hidden="true"><span class="spinner"></span></div>
+      <div class="modal-actions">
+        <button class="modal-cancel" id="verifyClose" type="button">Close</button>
+        <button class="modal-confirm" id="verifyViewBoard" type="button" hidden>View leaderboard</button>
+      </div>
+      <p class="fineprint">No need to resubmit — your rank goes live automatically once the payment is detected.</p>
+    </div>
+  </dialog>
+
+  <dialog id="infoDialog" aria-labelledby="infoTitle">
+    <div class="modal-inner">
+      <span class="modal-label">PLAIN ENGLISH</span>
+      <h2 id="infoTitle"></h2>
+      <p id="infoBody"></p>
+      <div id="infoDocWrap" hidden>
+        <iframe id="infoDocFrame" title="Policy document" loading="lazy"></iframe>
+        <a id="infoDocLink" href="#" target="_blank" rel="noopener">Open in Google Drive ↗</a>
+      </div>
+      <div class="modal-actions" style="grid-template-columns:1fr"><button class="modal-confirm" id="closeInfo" type="button">Got it</button></div>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="shared.js"></script>
+  <script>
+    // ---- Profiles board ----
+    let allTime = [
+      {name:'Aarav Sharma', headline:'Full-stack developer · React, Node', college:'IIT Bombay', skills:['Python','React','Node'], linkedin:'https://linkedin.com/in/aaravsharma', github:'https://github.com/aaravsharma', coding:'https://leetcode.com/aaravsharma', bid:450, clicks:120, age:'2h'},
+      {name:'Diya Patel', headline:'ML engineer · PyTorch, MLOps', college:'IIIT Hyderabad', skills:['Python','PyTorch','SQL'], linkedin:'https://linkedin.com/in/diyapatel', github:'', coding:'https://codeforces.com/profile/diyapatel', bid:320, clicks:98, age:'5h'},
+      {name:'Kabir Singh', headline:'Android developer · Kotlin, Compose', college:'DTU Delhi', skills:['Kotlin','Android','Firebase'], linkedin:'', github:'https://github.com/kabirsingh', coding:'', bid:180, clicks:64, age:'1d'}
+    ];
+    let today = [];
+    let liveLoaded = false;
+
+    let activeView = 'all';
+    let college = 'All';
+    let search = '';
+    let page = 1;
+    const perPage = 5;
+    let activity = [];
+    let weeksCache = null;   // { weeks: [...] } from /api/weeks
+    let activeWeek = null;   // selected week number in the Previous weeks view
+
+    async function loadWeeks() {
+      if (weeksCache) return weeksCache;
+      try { weeksCache = await fetchWeeks(); }
+      catch { weeksCache = { weeks: [] }; }
+      if (!activeWeek && weeksCache.weeks.length) {
+        activeWeek = weeksCache.weeks[weeksCache.weeks.length - 1].week;
+      }
+      return weeksCache;
+    }
+
+    function renderWeeks() {
+      const weeks = (weeksCache && weeksCache.weeks) || [];
+      if (!weeks.length) {
+        $('#leaderboard').innerHTML = '<div class="empty">No previous weeks yet — rankings reset every Sunday, and past winners will appear here.</div>';
+        return;
+      }
+      const w = weeks.find(x => x.week === activeWeek) || weeks[weeks.length - 1];
+      activeWeek = w.week;
+      const pills = weeks.map(x =>
+        `<button class="week-pill" type="button" data-week="${x.week}" aria-pressed="${x.week === w.week}">Week ${x.week}</button>`).join('');
+      const range = w.start && w.end ? `${fmtWeekDate(w.start)} – ${fmtWeekDate(w.end)}` : '';
+      const list = w.profiles.length ? w.profiles.map((p, i) => {
+        const rank = p.rank || i + 1;
+        const tags = (p.skills || []).slice(0, 6).map(s => `<span class="skill-tag">${escapeHTML(s)}</span>`).join('');
+        return `<article class="rank-row">
+          <div class="rank ${rankClass(rank)}">${rank}</div>
+          <div class="listing-main">
+            <div class="listing-title-line"><h3 class="listing-title">${escapeHTML(p.name)}</h3></div>
+            ${p.headline ? `<p class="profile-headline">${escapeHTML(p.headline)}</p>` : ''}
+            ${p.college ? `<p class="profile-college">${escapeHTML(p.college)}</p>` : ''}
+            ${tags ? `<div class="skill-tags">${tags}</div>` : ''}
+          </div>
+          <div class="bid"><strong>${money(p.bid)}</strong><span>rank bid</span></div>
+        </article>`;
+      }).join('') : '<div class="empty">No profiles ranked that week.</div>';
+      $('#leaderboard').innerHTML = `
+        <div class="weeks-bar"><div class="week-pills" role="tablist" aria-label="Previous weeks">${pills}</div></div>
+        <div class="weeks-summary"><strong>Week ${w.week}</strong>${range ? ' · ' + escapeHTML(range) : ''} · ${w.profileCount} profile${w.profileCount === 1 ? '' : 's'} · ${money(w.revenue)} in bids</div>
+        <div class="weeks-list">${list}</div>`;
+    }
+
+    function rowsToProfiles(rows) {
+      return rows.slice(1)
+        .filter(r => r.length > 2 && r[1] && r[1].trim())
+        .map(r => ({
+          name: r[1].trim(), headline: (r[2] || '').trim(), college: (r[3] || '').trim(),
+          skills: (r[4] || '').split(',').map(s => s.trim()).filter(Boolean),
+          linkedin: (r[5] || '').trim(), github: (r[6] || '').trim(), coding: (r[7] || '').trim(),
+          bid: toNum(r[9]), clicks: toNum(r[10]), age: (r[11] || '').trim()
+        }))
+        .sort((a, b) => b.bid - a.bid);
+    }
+
+    function rowsToActivity(rows) {
+      return rows.slice(1)
+        .filter(r => r.length > 1 && r[1] && r[1].trim())
+        .map(r => ({ time: (r[0] || '').trim(), name: r[1].trim(), action: (r[2] || '').trim() }));
+    }
+
+    function applyLiveStats(rows) {
+      const map = {};
+      rows.slice(1).forEach(r => { if (r[0] && r[0].trim()) map[r[0].trim()] = r[1]; });
+      if (map['Visitors']) $('#visitorsStat').textContent = toNum(map['Visitors']).toLocaleString('en-IN');
+      if (map['Revenue (INR)'] !== undefined) $('#revenueStat').textContent = money(toNum(map['Revenue (INR)']));
+      $('#profilesStat').textContent = toNum(map['Profiles listed'] ?? allTime.length).toLocaleString('en-IN');
+    }
+
+    async function initLiveData(highlightName) {
+      setDataPill('syncing', 'Connecting to database…');
+      try {
+        const [leaderRows, activityRows, statsRows] = await Promise.all([
+          fetchSheet(RANKLY_DB.tabs.allTime),
+          fetchSheet(RANKLY_DB.tabs.activity),
+          fetchSheet(RANKLY_DB.tabs.stats)
+        ]);
+        const liveAll = rowsToProfiles(leaderRows);
+        allTime = liveAll;
+        today = liveAll.filter(p => p.age === 'now');
+        liveLoaded = true;
+        const liveActivity = rowsToActivity(activityRows);
+        activity = liveActivity;
+        applyLiveStats(statsRows);
+        if (highlightName) {
+          allTime.forEach(i => i.new = false);
+          const item = allTime.find(i => i.name.toLowerCase() === String(highlightName).toLowerCase());
+          if (item) {
+            item.new = true;
+            activeView = 'all'; college = 'All'; search = '';
+            page = Math.ceil((allTime.indexOf(item) + 1) / perPage);
+            $('#searchInput').value = '';
+            document.querySelectorAll('.view-tab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.view === 'all')));
+            renderColleges();
+          }
+        }
+        renderColleges(); renderLeaderboard(); renderActivity();
+        setDataPill('live', 'Live database');
+      } catch (err) {
+        liveLoaded = false;
+        setDataPill('demo', 'Demo data (offline)');
+        renderColleges(); renderLeaderboard(); renderActivity();
+      }
+    }
+
+    function renderColleges() {
+      const counts = {};
+      allTime.forEach(p => { const c = p.college || 'Independent'; counts[c] = (counts[c] || 0) + 1; });
+      const list = ['All', ...Object.keys(counts).sort((a, b) => counts[b] - counts[a]).slice(0, 8)];
+      $('#colleges').innerHTML = list.map(c => `<button class="chip" type="button" aria-pressed="${c === college}" data-college="${escapeHTML(c)}">${escapeHTML(c)}</button>`).join('');
+    }
+
+    function getFiltered() {
+      const source = activeView === 'all' ? allTime : today;
+      return source.filter(p =>
+        (college === 'All' || (p.college || 'Independent') === college) &&
+        (`${p.name} ${p.headline} ${p.college} ${p.skills.join(' ')}`).toLowerCase().includes(search));
+    }
+
+    function renderLeaderboard() {
+      if (activeView === 'weeks') { renderWeeks(); return; }
+      const filtered = getFiltered();
+      const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+      page = Math.min(page, totalPages);
+      const start = (page - 1) * perPage;
+      const shown = filtered.slice(start, start + perPage);
+      const source = activeView === 'all' ? allTime : today;
+      let html;
+      if (!shown.length) {
+        html = liveLoaded
+          ? '<div class="empty">No profiles yet — be the first to claim the top spot.</div>'
+          : '<div class="empty">No profiles match that filter. Try another search.</div>';
+      } else {
+        html = shown.map(p => {
+          const trueRank = source.indexOf(p) + 1;
+          const tags = p.skills.slice(0, 6).map(s => `<span class="skill-tag">${escapeHTML(s)}</span>`).join('');
+          return `<article class="rank-row${p.new ? ' just-added' : ''}">
+            <div class="rank ${rankClass(trueRank)}">${trueRank}</div>
+            <div class="listing-main">
+              <div class="listing-title-line"><h3 class="listing-title">${escapeHTML(p.name)}</h3></div>
+              <p class="profile-headline">${escapeHTML(p.headline)}</p>
+              ${p.college ? `<p class="profile-college">${escapeHTML(p.college)}</p>` : ''}
+              ${tags ? `<div class="skill-tags">${tags}</div>` : ''}
+              ${profileLinksHTML(p)}
+              <div class="listing-meta"><span>${eyeIcon}${p.clicks.toLocaleString()} clicks</span><span>${arrowIcon}${escapeHTML(p.age || '')}</span></div>
+            </div>
+            <div class="bid"><strong>${money(p.bid)}</strong><span>rank bid</span></div>
+          </article>`;
+        }).join('');
+      }
+      $('#leaderboard').innerHTML = html;
+
+      const first = filtered.length ? start + 1 : 0;
+      const last = Math.min(start + perPage, filtered.length);
+      $('#resultsNote').textContent = `Showing ${first}–${last} of ${filtered.length}`;
+      $('#pageSummary').textContent = filtered.length ? `Page ${page} of ${totalPages}` : 'No results';
+      $('#pageButtons').innerHTML = `<button class="page-btn" data-page="${page - 1}" ${page === 1 ? 'disabled' : ''} aria-label="Previous page">←</button>` +
+        Array.from({ length: totalPages }, (_, i) => `<button class="page-btn" data-page="${i + 1}" ${page === i + 1 ? 'aria-current="page"' : ''}>${i + 1}</button>`).join('') +
+        `<button class="page-btn" data-page="${page + 1}" ${page === totalPages ? 'disabled' : ''} aria-label="Next page">→</button>`;
+      updateEstimate();
+    }
+
+    function renderActivity() {
+      $('#activityList').innerHTML = activity.length
+        ? activityHTML(activity)
+        : '<li class="activity-item"><span class="dot" aria-hidden="true"></span><span>No activity yet — claims will appear here.</span></li>';
+    }
+
+    function estimatedRank(amount, source = allTime) {
+      return source.filter(p => p.bid > amount).length + 1;
+    }
+
+    function updateEstimate() {
+      const amount = clampBid($('#bidInput').value);
+      $('#rankEstimate').textContent = `Estimated rank #${estimatedRank(amount)}`;
+    }
+
+    function adjustBid(delta) {
+      const input = $('#bidInput');
+      input.value = clampBid((Number(input.value) || 1) + delta);
+      updateEstimate();
+    }
+
+    function validEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v); }
+
+    renderColleges();
+    renderLeaderboard();
+    renderActivity();
+    initLiveData();
+    initPayments();
+    wireCheckout();
+    wireVerifyDialog();
+    wireInfoDialogs();
+
+    $('#colleges').addEventListener('click', e => {
+      const btn = e.target.closest('[data-college]');
+      if (!btn) return;
+      college = btn.dataset.college; page = 1; renderColleges(); renderLeaderboard();
+    });
+    document.querySelectorAll('.view-tab').forEach(btn => btn.addEventListener('click', () => {
+      activeView = btn.dataset.view; page = 1;
+      document.querySelectorAll('.view-tab').forEach(b => b.setAttribute('aria-selected', String(b === btn)));
+      document.querySelector('.leader-panel').classList.toggle('weeks-mode', activeView === 'weeks');
+      if (activeView === 'weeks') { loadWeeks().then(renderLeaderboard); }
+      else renderLeaderboard();
+    }));
+    $('#leaderboard').addEventListener('click', e => {
+      const pill = e.target.closest('[data-week]');
+      if (pill) { activeWeek = Number(pill.dataset.week); renderWeeks(); }
+    });
+    $('#searchInput').addEventListener('input', e => { search = e.target.value.trim().toLowerCase(); page = 1; renderLeaderboard(); });
+    $('#pageButtons').addEventListener('click', e => {
+      const btn = e.target.closest('[data-page]'); if (!btn || btn.disabled) return;
+      page = Number(btn.dataset.page); renderLeaderboard(); document.querySelector('.leader-head').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    $('#bidMinus').addEventListener('click', () => adjustBid(-100));
+    $('#bidPlus').addEventListener('click', () => adjustBid(100));
+    $('#bidInput').addEventListener('input', updateEstimate);
+
+    $('#claimForm').addEventListener('submit', e => {
+      e.preventDefault();
+      if (!paymentsReady()) {
+        showToast('Payments are not configured yet. Please try again later.');
+        return;
+      }
+      const name = $('#nameInput').value.trim();
+      const headline = $('#headlineInput').value.trim();
+      const collegeV = $('#collegeInput').value.trim();
+      const skills = $('#skillsInput').value.trim();
+      const linkedin = $('#linkedinInput').value.trim();
+      const github = $('#githubInput').value.trim();
+      const coding = $('#codingInput').value.trim();
+      const email = $('#emailInput').value.trim();
+      const bid = clampBid($('#bidInput').value);
+      if (!name || !headline) { showToast('Please add your name and headline.'); return; }
+      if (!linkedin && !github && !coding) { showToast('Add at least one profile link — LinkedIn, GitHub, or a coding profile.'); return; }
+      if (email && !validEmail(email)) { showToast('That email address doesn’t look valid.'); return; }
+      openCheckout({
+        title: 'Complete your bid',
+        summary: [
+          ['Profile', `${name}${collegeV ? ' · ' + collegeV : ''}`],
+          ['Headline', headline],
+          ['Bid amount', money(bid)],
+          ['Estimated rank', `#${estimatedRank(bid)}`]
+        ],
+        amount: bid,
+        body: { board: 'profiles', name, headline, college: collegeV, skills, linkedin, github, coding, email, bid },
+        afterSubmit: () => {
+          $('#claimForm').reset(); $('#bidInput').value = 100; updateEstimate();
+          initLiveData(name);
+        }
+      });
+    });
+  </script>
+</body>
+</html>
