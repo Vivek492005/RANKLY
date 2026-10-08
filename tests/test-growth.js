@@ -131,22 +131,30 @@ async function run() {
     dom.window.close();
   });
 
-  await t('submit-claim rejects #1 snipes below the increment', async () => {
+  await t('create-order rejects #1 snipes below the increment', async () => {
     const sheetsPath = require.resolve(path.join(APP, 'lib/sheets.js'));
-    const handlerPath = require.resolve(path.join(APP, 'api/submit-claim.js'));
+    const cashfreePath = require.resolve(path.join(APP, 'lib/cashfree.js'));
+    const handlerPath = require.resolve(path.join(APP, 'api/create-order.js'));
     delete require.cache[handlerPath];
     const realSheets = require(path.join(APP, 'lib/sheets.js'));
     require.cache[sheetsPath] = { id: sheetsPath, filename: sheetsPath, loaded: true,
       exports: {
         recordPendingClaim: async () => { throw new Error('should not be called'); },
-        findUnmatchedPayment: async () => null,
-        markPaymentMatched: async () => {},
-        autoVerifyAndApply: async () => null,
         getBidContext: async () => ({ topBid: 500, existingBid: null }),
         MIN_INCREMENT: 10, incrementError: realSheets.incrementError,
+        identityKey: () => 'id:deadbeefdeadbeef',
+        findClaimByOrderId: async () => null,
+        setClaimPhoto: async () => {},
+        upsertVerification: async () => {},
+      } };
+    require.cache[cashfreePath] = { id: cashfreePath, filename: cashfreePath, loaded: true,
+      exports: {
+        isCashfreeConfigured: () => true,
+        createOrder: async () => { throw new Error('should not be called'); },
+        newOrderId: () => 'rankly_test1',
       } };
     const handler = require(handlerPath);
-    const base = { board: 'profiles', name: 'Asha', headline: 'Dev', linkedin: 'https://linkedin.com/in/asha', utr: 'ABCDEF123456' };
+    const base = { board: 'profiles', name: 'Asha', headline: 'Dev', linkedin: 'https://linkedin.com/in/asha', phone: '9876543210' };
     const call = async (bid) => {
       const res = { statusCode: 200, status(c) { this.statusCode = c; return this; }, json(o) { this.body = o; return this; }, setHeader() {}, end() {} };
       await handler({ method: 'POST', body: { ...base, bid } }, res);
@@ -156,26 +164,34 @@ async function run() {
     assert.strictEqual(r.statusCode, 400, '505 rejected');
     assert.ok(r.body.error.includes('#1'), 'mentions #1: ' + r.body.error);
     assert.ok(r.body.error.includes('₹510'), 'names the minimum: ' + r.body.error);
-    delete require.cache[sheetsPath]; delete require.cache[handlerPath];
+    delete require.cache[sheetsPath]; delete require.cache[cashfreePath]; delete require.cache[handlerPath];
   });
 
-  await t('submit-claim accepts clearing bids and rejects small re-bids', async () => {
+  await t('create-order accepts clearing bids and rejects small re-bids', async () => {
     const sheetsPath = require.resolve(path.join(APP, 'lib/sheets.js'));
-    const handlerPath = require.resolve(path.join(APP, 'api/submit-claim.js'));
+    const cashfreePath = require.resolve(path.join(APP, 'lib/cashfree.js'));
+    const handlerPath = require.resolve(path.join(APP, 'api/create-order.js'));
     delete require.cache[handlerPath];
     let recorded = 0;
     const realSheets = require(path.join(APP, 'lib/sheets.js'));
     require.cache[sheetsPath] = { id: sheetsPath, filename: sheetsPath, loaded: true,
       exports: {
         recordPendingClaim: async () => { recorded++; return {}; },
-        findUnmatchedPayment: async () => null,
-        markPaymentMatched: async () => {},
-        autoVerifyAndApply: async () => null,
         getBidContext: async () => ({ topBid: 500, existingBid: 400 }),
         MIN_INCREMENT: 10, incrementError: realSheets.incrementError,
+        identityKey: () => 'id:deadbeefdeadbeef',
+        findClaimByOrderId: async () => null,
+        setClaimPhoto: async () => {},
+        upsertVerification: async () => {},
+      } };
+    require.cache[cashfreePath] = { id: cashfreePath, filename: cashfreePath, loaded: true,
+      exports: {
+        isCashfreeConfigured: () => true,
+        createOrder: async () => ({ payment_session_id: 'sess_test', order_id: 'rankly_test2' }),
+        newOrderId: () => 'rankly_test2',
       } };
     const handler = require(handlerPath);
-    const base = { board: 'profiles', name: 'Asha', headline: 'Dev', linkedin: 'https://linkedin.com/in/asha', utr: 'ABCDEF123456' };
+    const base = { board: 'profiles', name: 'Asha', headline: 'Dev', linkedin: 'https://linkedin.com/in/asha', phone: '9876543210' };
     const call = async (bid) => {
       const res = { statusCode: 200, status(c) { this.statusCode = c; return this; }, json(o) { this.body = o; return this; }, setHeader() {}, end() {} };
       await handler({ method: 'POST', body: { ...base, bid } }, res);
@@ -186,10 +202,42 @@ async function run() {
     assert.ok(r.body.error.includes('₹410'), 'names re-bid minimum: ' + r.body.error);
     r = await call(410);
     assert.strictEqual(r.statusCode, 200, '410 re-bid accepted');
+    assert.strictEqual(r.body.paymentSessionId, 'sess_test', 'returns cashfree session');
+    assert.strictEqual(r.body.orderId, 'rankly_test2', 'returns order id');
     assert.strictEqual(recorded, 1, 'claim recorded');
     r = await call(300);
     assert.strictEqual(r.statusCode, 400, 'lower re-bid rejected (equal/lower loophole closed)');
-    delete require.cache[sheetsPath]; delete require.cache[handlerPath];
+    delete require.cache[sheetsPath]; delete require.cache[cashfreePath]; delete require.cache[handlerPath];
+  });
+
+  await t('create-order rejects bad phone numbers', async () => {
+    const sheetsPath = require.resolve(path.join(APP, 'lib/sheets.js'));
+    const cashfreePath = require.resolve(path.join(APP, 'lib/cashfree.js'));
+    const handlerPath = require.resolve(path.join(APP, 'api/create-order.js'));
+    delete require.cache[handlerPath];
+    const realSheets = require(path.join(APP, 'lib/sheets.js'));
+    require.cache[sheetsPath] = { id: sheetsPath, filename: sheetsPath, loaded: true,
+      exports: {
+        recordPendingClaim: async () => { throw new Error('should not be called'); },
+        getBidContext: async () => ({ topBid: 500, existingBid: null }),
+        MIN_INCREMENT: 10, incrementError: realSheets.incrementError,
+        identityKey: () => 'id:deadbeefdeadbeef',
+        findClaimByOrderId: async () => null,
+        setClaimPhoto: async () => {},
+        upsertVerification: async () => {},
+      } };
+    require.cache[cashfreePath] = { id: cashfreePath, filename: cashfreePath, loaded: true,
+      exports: {
+        isCashfreeConfigured: () => true,
+        createOrder: async () => { throw new Error('should not be called'); },
+        newOrderId: () => 'rankly_test3',
+      } };
+    const handler = require(handlerPath);
+    const res = { statusCode: 200, status(c) { this.statusCode = c; return this; }, json(o) { this.body = o; return this; }, setHeader() {}, end() {} };
+    await handler({ method: 'POST', body: { board: 'profiles', name: 'Asha', headline: 'Dev', linkedin: 'https://linkedin.com/in/asha', bid: 100, phone: '12345' } }, res);
+    assert.strictEqual(res.statusCode, 400, 'bad phone rejected');
+    assert.match(res.body.error, /mobile number/, 'mentions mobile number: ' + res.body.error);
+    delete require.cache[sheetsPath]; delete require.cache[cashfreePath]; delete require.cache[handlerPath];
   });
 
   await t('getBidContext column indices match sheet headers', async () => {
@@ -204,7 +252,7 @@ async function run() {
     assert.strictEqual(cols(show)[4], 'Link', 'showcase link col');
   });
 
-  console.log(`\n${pass}/10 growth tests passed`);
+  console.log(`\n${pass}/11 growth tests passed`);
 }
 
 run().catch((e) => { console.error('FAIL:', e.message); process.exit(1); });

@@ -1,9 +1,9 @@
 'use strict';
-// Shared claim-body validation for both payment paths:
-//   - POST /api/submit-claim  (manual UPI + UTR)
-//   - POST /api/create-order  (Razorpay)
+// Shared claim-body validation for the Cashfree payment path:
+//   - POST /api/create-order  (Cashfree order creation)
 // Returns { claim } on success, or throws { status, error } for a 4xx.
-// The UTR is validated only when required (manual-UPI path).
+// The UTR option is legacy (manual-UPI path, removed); create-order never
+// requires it — the Cashfree order id is stored as the transaction id.
 const MIN_BID = 1;
 const MAX_BID = 999;
 const PLATFORMS = ['GitHub', 'Instagram', 'LinkedIn', 'Other'];

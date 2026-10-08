@@ -873,26 +873,9 @@ dialog::backdrop { background: rgba(26, 26, 26, 0.45); }
 .modal-confirm { border: 0; background: var(--accent-primary); color: #fff; box-shadow: 0 6px 18px rgba(255, 106, 77, 0.35); }
 .modal-confirm:hover { filter: brightness(0.96); }
 .modal-confirm:disabled { opacity: 0.55; cursor: wait; }
-.upi-pay {
-  display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 16px; align-items: center;
-  margin: 18px 0; padding: 16px;
-  background: var(--bg-page);
-  border: 1px solid var(--border-subtle);
-  border-radius: 16px;
-}
-/* Razorpay section of the checkout dialog */
-.rzp-pay { margin: 18px 0; text-align: center; }
-.rzp-btn { width: 100%; font-size: 1.05rem; padding: 14px 18px; }
-.upi-qr { width: 132px; height: 132px; border-radius: 10px; background: #fff; }
-.upi-pay-info { min-width: 0; }
-.upi-id { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
-.upi-id span { font-size: 0.68rem; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-muted); font-weight: 600; }
-.upi-id strong { font-size: 1.02rem; }
-.copy-btn {
-  border: 1px solid var(--border-subtle); background: #fff;
-  border-radius: var(--radius-pill); padding: 7px 14px; font-size: 0.78rem; font-weight: 600;
-}
-.copy-btn:hover { border-color: var(--accent-primary); color: var(--accent-primary); }
+/* Cashfree section of the checkout dialog */
+.cf-pay { margin: 18px 0; text-align: center; }
+.cf-btn { width: 100%; font-size: 1.05rem; padding: 14px 18px; }
 .fineprint { font-size: 0.7rem !important; margin: 13px 0 0 !important; color: var(--text-muted); }
 #infoDocWrap { margin: 14px 0 4px; }
 #infoDocFrame { width: 100%; height: 300px; border: 1px solid var(--border-subtle); border-radius: 12px; background: #fff; }
@@ -989,8 +972,6 @@ dialog::backdrop { background: rgba(26, 26, 26, 0.45); }
   .stats { grid-template-columns: 1fr; }
   .form-row { grid-template-columns: 1fr; }
   .modal-actions { grid-template-columns: 1fr; }
-  .upi-pay { grid-template-columns: 1fr; justify-items: center; text-align: center; }
-  .upi-id { justify-content: center; }
   .clash-row { grid-template-columns: 28px 1fr auto; }
   .clash-bar { display: none; }
   .payment-setup-head { flex-direction: column; }

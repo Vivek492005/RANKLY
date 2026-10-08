@@ -3,56 +3,65 @@
 Pay-to-rank **student leaderboard** + **work showcase**. Students list their
 profiles (headline, college, skills, LinkedIn / GitHub / coding profile) and
 bid ₹1–₹999 for rank; creators showcase work (GitHub / Instagram / LinkedIn /
-Other) and bid for the top spots. Rank bids are paid by manual UPI to the
-published QR/UPI ID. The buyer submits their UPI transaction ID (UTR); the
-claim is recorded as "Awaiting verification" in the "Rankly Database" Google
-Sheet, and the bank-SMS webhook auto-verifies + auto-applies it — the rank
-goes live with no admin step. The claims cron (`rankly-claims-processor`,
-every 30 min) remains the backstop for anything stuck at "verified".
+Other) and bid for the top spots. Rank bids are paid through **Cashfree**
+(UPI, cards, netbanking). The buyer pays in the Cashfree checkout; the
+payment is verified server-side and the claim auto-applies — the rank goes
+live with no admin step. The Cashfree webhook is the backstop for payments
+completed after the browser callback, and the claims cron
+(`rankly-claims-processor`, every 30 min) remains the backstop for anything
+stuck at "verified".
 
 ## Layout
 
 - `index.html` — student profiles board. Reads profile data live from Google
   Sheets (gviz CSV, with embedded offline fallback). Claim flow: profile form
-  → review dialog (UPI QR + UPI ID + UTR field) → `POST /api/submit-claim`
-  with `board: 'profiles'` → auto-verified toast.
+  → review dialog → Cashfree checkout → `POST /api/verify-payment`
+  with `order_id` → verified toast.
 - `showcase.html` — work showcase board. Same design language and the same
-  UPI checkout; claims carry `board: 'showcase'`.
+  Cashfree checkout; claims carry `board: 'showcase'`.
 - `shared.js` — common frontend: sheet fetching, payments config, checkout
   dialog, Terms/Privacy dialogs, icons.
 - `styles.css` — shared stylesheet for both pages.
-- `upi-qr.png` — the UPI QR code shown at checkout.
-- `api/config.js` — public config: `upi-manual` mode, UPI ID, min bid,
-  and whether claim recording is configured.
-- `api/submit-claim.js` — board-aware validation (profiles: name + headline +
-  ≥1 profile link; showcase: title + creator + work link), bid ₹1–₹999, UTR
-  format, rejects duplicate UTRs, appends the claim via `lib/sheets.js`.
-  Never touches a board directly. Also auto-applies when the bank SMS
-  already arrived (payment inbox).
-- `api/upi-webhook.js` — `POST /api/upi-webhook?key=SECRET` with
-  `{sms}` from the phone's SMS forwarder. Parses amount + UTR, logs to
-  "Payment inbox", auto-verifies + auto-applies the matching claim on the
-  right board. Amount must equal the bid or the claim stays manual.
+- `api/config.js` — public config: `cashfree` mode, min/max bid, whether
+  claim recording and Cashfree are configured.
+- `api/create-order.js` — board-aware validation (profiles: name + headline +
+  ≥1 profile link; showcase: title + creator + work link), bid ₹1–₹999,
+  10-digit mobile number, minimum-increment rule, rejects duplicate order
+  ids. Creates the Cashfree order and appends the claim as "Awaiting
+  payment" via `lib/sheets.js`. Never touches a board directly.
+- `api/verify-payment.js` — `POST` with `{ order_id }` after checkout.
+  Confirms `PAID` + exact amount with Cashfree directly, then verifies +
+  applies the claim (idempotent).
+- `api/cashfree-webhook.js` — `POST /api/cashfree-webhook` from Cashfree.
+  Verifies the `x-webhook-signature` HMAC, confirms `PAID` via the API,
+  then verifies + applies the matching claim (idempotent). Marks failed /
+  dropped payments as "Payment failed".
+- `lib/cashfree.js` — Cashfree PG client (order create/status, webhook
+  signature verification). Sandbox vs production via `CASHFREE_ENV`.
 - `lib/sheets.js` — service-account Sheets client for both boards, claims,
-  activity, stats, and the payment inbox, in the exact sheet column layout.
+  activity, stats, in the exact sheet column layout.
 
 ## Sheet tabs
 
 `Leaderboard (All time)` + `Today` (profiles) · `Showcase` (work) ·
-`Claims` (17 cols incl. Board) · `Activity log` · `Site stats` (Visitors,
-Revenue, Profiles listed, Works showcased) · `Payment inbox` ·
-`Archive (companies)` (pre-pivot history).
+`Claims` (incl. Board, Transaction ID = Cashfree order id) ·
+`Activity log` · `Site stats` (Visitors, Revenue, Profiles listed, Works
+showcased) · `Weekly Archive` · `Reset Log`.
 
 ## Environment variables (Vercel → Project → Settings → Environment Variables)
 
 | Variable | Value |
 |---|---|
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | full service-account JSON (one line) |
-| `UPI_WEBHOOK_SECRET` | random secret; the phone posts to `/api/upi-webhook?key=…` |
-| `UPI_ID` | `sochai@ptyes` (default already in code) |
+| `CASHFREE_CLIENT_ID` | Cashfree dashboard → API Keys (App ID) |
+| `CASHFREE_CLIENT_SECRET` | Cashfree dashboard → API Keys (Secret Key) |
+| `CASHFREE_ENV` | `production` (or `sandbox` for testing) |
+| `SITE_URL` | `https://ranklyy.vercel.app` (default already in code) |
 | `SPREADSHEET_ID` | `1FSWiEoLh8AgADL8jiFye4wOL5lt1KwjYjwSeeTBuy0o` (default already in code) |
 
-No payment-gateway keys needed — UPI is manual.
+The Cashfree webhook URL to register (dashboard → Developers → Webhooks,
+or per-order `notify_url` which the API sets automatically):
+`https://ranklyy.vercel.app/api/cashfree-webhook`
 
 ## Google service account setup (one time, ~5 min)
 
@@ -66,28 +75,26 @@ No payment-gateway keys needed — UPI is manual.
    it via the public gviz CSV endpoint.
 4. Paste the whole JSON file content into `GOOGLE_SERVICE_ACCOUNT_JSON`.
 
-## Phone: bank-SMS auto-verification (one time)
+## Cashfree setup (one time)
 
-On the phone whose number is registered with the bank account behind
-`sochai@ptyes`: Tasker (or any SMS-to-webhook app) → profile on received
-bank credit SMS → HTTP POST to
-`https://<your-vercel-domain>/api/upi-webhook?key=<UPI_WEBHOOK_SECRET>`
-with body `{"sms":"%SMSRB"}`. The phone needs internet at payment time.
+1. Sign up at cashfree.com and complete business KYC/activation.
+2. Dashboard → API Keys → copy the **Client ID** and **Secret Key**
+   (sandbox keys for testing, production keys for live).
+3. Set `CASHFREE_CLIENT_ID`, `CASHFREE_CLIENT_SECRET`, and `CASHFREE_ENV`
+   as Vercel environment variables (Production).
+4. Whitelist the site domain in the Cashfree dashboard before going live.
+5. The webhook URL above is sent as `notify_url` on every order; you can
+   also register it under Developers → Webhooks.
 
 ## Admin: verifying a payment
 
-Normally nothing — the webhook auto-verifies. If a claim is stuck at
-"Awaiting verification" (amount mismatch, SMS didn't arrive): check your
-UPI app for a matching payment (amount + UTR); if it matches, change Status
-to **verified** and the claims cron applies the rank within ~30 minutes.
-Never set "verified" without confirming the money.
-
-## One-time migration (company → student schema)
-
-`~/workspace/rankly/migrate-to-students.js` — run once with
-`GOOGLE_SERVICE_ACCOUNT_JSON` set after Google access is restored. Archives
-the company rows, writes the new headers, creates the Showcase tab, resets
-stats. Do NOT run after going live.
+Normally nothing — the verify callback + webhook apply claims
+automatically. If a claim is stuck at "Awaiting payment" (webhook missed,
+browser closed early): check the order status in the Cashfree dashboard;
+if it is PAID for the exact bid amount, the next `/api/verify-payment`
+call or webhook retry applies it. The claims cron picks up anything left
+at "verified" within ~30 minutes. Never mark "applied" without confirming
+the money in Cashfree.
 
 ## Deploy
 
@@ -98,12 +105,21 @@ vercel deploy --prod        # needs `vercel login` first
 
 First deploy with only the Vercel token: the site goes live, boards read
 the sheet, and the claim button shows PAYMENTS OFFLINE until
-`GOOGLE_SERVICE_ACCOUNT_JSON` is set.
+`GOOGLE_SERVICE_ACCOUNT_JSON` and the Cashfree keys are set.
 
 ## Tests
 
-- `/tmp/test-backend.js` — mock-Sheets E2E of `api/submit-claim` +
-  `api/upi-webhook` + `lib/sheets.js`: validation, claim→SMS, SMS→claim,
-  amount mismatch, duplicate UTR/SMS, re-bids, stats. (44 checks)
-- `/tmp/jsdom-test/smoke.js` — jsdom smoke test of both pages + shared.js:
-  offline fallback render, filters, nav, claim wiring. (25 checks)
+```sh
+cd ~/workspace/rankly
+for f in tests/test-*.js; do node "$f"; done
+python3 tests/test_outbid_alerts.py
+```
+
+- `tests/test-cashfree.js` — webhook signature verification (accept /
+  tamper / missing secret), order-id format, sandbox vs production env.
+- `tests/test-verify-polling.js` — jsdom: Cashfree checkout success path,
+  phone validation, disabled-payments guard, verify-dialog polling.
+- `tests/test-growth.js` — bid minimum-increment rule via
+  `api/create-order` (mocked Cashfree), phone validation.
+- Remaining suites cover sheets helpers, claim status, duels, weekly
+  archive, photos, and outbid alerts.

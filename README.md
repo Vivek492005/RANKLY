@@ -32,10 +32,9 @@ from that directory, or connect this repo and set the root accordingly.
 | Variable | Purpose |
 |---|---|
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | Service-account key JSON for Sheets access |
-| `UPI_WEBHOOK_SECRET` | Shared secret for the bank-SMS forwarder (`/api/upi-webhook`) |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob token for optional profile photos |
-| `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` | Only if Razorpay is ever re-enabled (see Payments) |
-| `RAZORPAY_WEBHOOK_SECRET` | Only if Razorpay is ever re-enabled |
+| `CASHFREE_CLIENT_ID` / `CASHFREE_CLIENT_SECRET` | Cashfree dashboard → API Keys (App ID / Secret Key) |
+| `CASHFREE_ENV` | `production` (or `sandbox` for testing) |
 
 Set these in the Vercel dashboard — never commit them.
 
@@ -54,16 +53,18 @@ run the workflow once.
 
 ## Payments
 
-The working path is **manual UPI + bank-SMS auto-verification**: the bidder
-pays the UPI ID shown at checkout, the bank's "money credited" SMS is
-forwarded to `/api/upi-webhook`, and matching claims are verified and applied
-automatically (`submit-claim` also checks the inbox on submit, so
-SMS-arrived-first still applies instantly).
+The working path is **Cashfree**: the bidder pays in the Cashfree checkout
+(UPI, cards, netbanking) opened from the review dialog. `POST
+/api/create-order` validates the claim and creates the Cashfree order; after
+payment, `POST /api/verify-payment` confirms `PAID` + the exact amount with
+Cashfree directly and applies the claim. The Cashfree webhook
+(`POST /api/cashfree-webhook`, HMAC-verified) is the backstop for payments
+completed after the browser callback. Webhook URL:
+`https://ranklyy.vercel.app/api/cashfree-webhook`.
 
-Razorpay checkout (`create-order` → Checkout → `verify-payment`, with
-`razorpay-webhook` as backstop) is implemented but **not a live option**:
-Razorpay rejected the business activation, so its keys only ever work in
-test mode and can never settle real money.
+Manual UPI + bank-SMS auto-verification was the previous path and has been
+fully retired. Razorpay was never a live option (business activation
+rejected); its code and test keys have been removed.
 
 ## Data & privacy
 

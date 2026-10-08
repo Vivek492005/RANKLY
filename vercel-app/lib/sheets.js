@@ -28,10 +28,11 @@ const { isPublicPhotoUrl } = require('./photos');
 //   Archive (companies): the pre-pivot company leaderboard, kept for history.
 //
 // Claims written here NEVER touch a board directly. They sit at
-// "Awaiting verification" until the payment is confirmed — automatically by
-// the bank-SMS webhook (api/upi-webhook.js), which flips them through
-// "verified" straight to "applied". The claims cron remains as a backstop
-// for anything stuck at "verified".
+// "Awaiting payment" until the payment is confirmed — automatically by the
+// Cashfree webhook (api/cashfree-webhook.js) or the /api/verify-payment
+// browser callback, which flip them through "verified" straight to
+// "applied". The claims cron remains as a backstop for anything stuck at
+// "verified".
 const { google } = require('googleapis');
 
 const SPREADSHEET_ID = process.env.SPREADSHEET_ID || '1FSWiEoLh8AgADL8jiFye4wOL5lt1KwjYjwSeeTBuy0o';
@@ -115,10 +116,9 @@ function cleanStr(v, max) {
   return String(v == null ? '' : v).trim().slice(0, max);
 }
 
-// Records a bid claim. paymentMethod defaults to 'UPI (manual)' and status to
-// 'Awaiting verification' (the manual-UPI path). The Razorpay path passes
-// paymentMethod 'Razorpay', the Razorpay order id as utr, and status
-// 'Awaiting payment'.
+// Records a bid claim. paymentMethod defaults to 'Cashfree' and status to
+// 'Awaiting payment' (the Cashfree order id is stored as the transaction
+// reference).
 // Returns { duplicate: true } when the transaction reference was already
 // submitted.
 // photoUrl (optional) is the public Blob URL of the user's profile photo,
@@ -456,9 +456,9 @@ async function autoVerifyAndApply(utr, expectedAmount = null) {
   }
 }
 
-// ---------- Razorpay verification ----------
+// ---------- Gateway order verification ----------
 
-// Find a Razorpay claim by its order id (stored in the Transaction ID
+// Find a gateway claim by its order id (stored in the Transaction ID
 // column Q, uppercased). Returns the row number plus the fields needed to
 // verify and apply, or null.
 async function findClaimByOrderId(orderId) {
@@ -481,21 +481,21 @@ async function findClaimByOrderId(orderId) {
   return null;
 }
 
-// Verify + apply a Razorpay claim by order id. Idempotent: a claim already
+// Verify + apply a Cashfree claim by order id. Idempotent: a claim already
 // 'applied' returns its rank without touching the board again, so duplicate
 // verify calls and repeated webhooks can never double-apply. The paid amount
-// (paise) must equal the claim's bid, otherwise the claim is left for manual
-// review. Uses the same transitional 'verifying' status as the UPI path so
-// the claims cron skips it mid-flight; on failure the claim is left
-// 'verified' for the cron backstop.
-async function verifyAndApplyRazorpayClaim(orderId, paidPaise) {
+// (INR, as reported by Cashfree) must equal the claim's bid, otherwise the
+// claim is left for manual review. Uses the same transitional 'verifying'
+// status as the UPI path so the claims cron skips it mid-flight; on failure
+// the claim is left 'verified' for the cron backstop.
+async function verifyAndApplyCashfreeClaim(orderId, paidRupees) {
   const found = await findClaimByOrderId(orderId);
   if (!found) return { notFound: true };
   if (found.status === 'applied') return { alreadyApplied: true, rank: found.rank, board: found.board };
   if (found.status !== 'awaiting payment' && found.status !== 'verifying') {
     return { wrongState: true, status: found.status };
   }
-  const paid = Math.floor(Number(paidPaise) / 100);
+  const paid = Math.round(Number(paidRupees));
   if (paid !== found.bid) return { amountMismatch: true, paid, bid: found.bid, board: found.board };
 
   const rows = await getValues(TAB_CLAIMS, `A${found.rownum}:R${found.rownum}`);
@@ -856,7 +856,7 @@ module.exports = {
   applyProfileClaim, applyShowcaseClaim, logActivity, refreshBoardStats,
   autoVerifyAndApply, recordInboundPayment, findUnmatchedPayment,
   markPaymentMatched, ensureInboxTab, ensureTab,
-  findClaimByOrderId, verifyAndApplyRazorpayClaim,
+  findClaimByOrderId, verifyAndApplyCashfreeClaim,
   ensureWeeksTab, getWeeklyArchive,
   MIN_INCREMENT, getBidContext, incrementError,
   identityKey: profileKeyOf, profileKeyOf, profileIdentityKey, workIdentityKey,

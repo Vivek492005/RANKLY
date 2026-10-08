@@ -123,13 +123,9 @@ async function initPayments() {
   try {
     const res = await fetch(API_BASE + '/api/config');
     payConfig = await res.json();
-  } catch { payConfig = { mode: 'unconfigured', sheetsConfigured: false, upiId: 'sochai@ptyes' }; }
-  if (payConfig.upiId) {
-    const t = $('#upiIdText'); if (t) t.textContent = payConfig.upiId;
-    const d = $('#upiIdDetail'); if (d) d.textContent = payConfig.upiId;
-  }
-  if (payConfig.mode === 'upi-manual' && payConfig.sheetsConfigured) {
-    badge.textContent = 'UPI PAYMENTS';
+  } catch { payConfig = { mode: 'unconfigured', sheetsConfigured: false }; }
+  if (payConfig.cashfreeEnabled && payConfig.sheetsConfigured) {
+    badge.textContent = 'SECURE PAYMENTS';
     badge.style.background = '#1a7f4b';
   } else {
     badge.textContent = 'PAYMENTS OFFLINE';
@@ -139,10 +135,10 @@ async function initPayments() {
   }
 }
 
-function paymentsReady() { return payConfig.mode === 'upi-manual' && payConfig.sheetsConfigured; }
+function paymentsReady() { return !!payConfig.cashfreeEnabled && payConfig.sheetsConfigured; }
 function clampBid(v) { return Math.min(999, Math.max(1, Math.floor(Number(v)) || 1)); }
 
-// ---- Checkout (UPI + UTR) ----
+// ---- Checkout (Cashfree) ----
 let checkoutBody = null;
 let checkoutAfter = null;
 let paying = false;
@@ -150,6 +146,11 @@ let paying = false;
 function openCheckout({ title, summary, amount, body, afterSubmit }) {
   checkoutBody = body;
   checkoutAfter = afterSubmit || null;
+  paying = false;
+  if (!payConfig.cashfreeEnabled) {
+    showToast('Online payments are not enabled yet. Please try again later.');
+    return;
+  }
   if (title) $('#checkoutTitle').textContent = title;
   const labels = ['reviewLabel1', 'reviewLabel2', 'reviewLabel3', 'reviewLabel4'];
   const values = ['reviewValue1', 'reviewValue2', 'reviewValue3', 'reviewValue4'];
@@ -157,186 +158,119 @@ function openCheckout({ title, summary, amount, body, afterSubmit }) {
     $('#' + labels[i]).textContent = label;
     $('#' + values[i]).textContent = value;
   });
-  // Razorpay is the payment rail when the backend has it configured;
-  // otherwise the manual-UPI section stays as the fallback.
-  const rzp = !!payConfig.razorpayEnabled;
-  $('#rzpPaySection').hidden = !rzp;
-  $('#manualPaySection').hidden = rzp;
-  $('#checkoutIntroRzp').hidden = !rzp;
-  $('#checkoutIntroManual').hidden = rzp;
-  if (rzp) {
-    const btn = $('#razorpayPayBtn');
-    btn.disabled = false;
-    btn.innerHTML = 'Pay ' + escapeHTML(money(amount)) + ' securely';
-  } else {
-    $('#upiAmount').textContent = money(amount);
-    $('#utrInput').value = '';
-  }
+  const btn = $('#cashfreePayBtn');
+  btn.disabled = false;
+  btn.innerHTML = 'Pay ' + escapeHTML(money(amount)) + ' securely';
+  const phoneInput = $('#cfPhoneInput');
+  if (phoneInput) phoneInput.value = '';
   $('#checkoutDialog').showModal();
 }
 
 function wireCheckout() {
-  $('#cancelCheckout').addEventListener('click', () => $('#checkoutDialog').close());
-  $('#checkoutDialog').addEventListener('click', (e) => { if (e.target === $('#checkoutDialog')) $('#checkoutDialog').close(); });
-  const copyBtn = $('#copyUpiId');
-  if (copyBtn) copyBtn.addEventListener('click', async () => {
-    const id = $('#upiIdText').textContent.trim();
-    try { await navigator.clipboard.writeText(id); showToast('UPI ID copied.'); }
-    catch {
-      const ta = document.createElement('textarea');
-      ta.value = id; document.body.appendChild(ta); ta.select();
-      try { document.execCommand('copy'); showToast('UPI ID copied.'); }
-      catch { showToast('Copy this UPI ID: ' + id); }
-      ta.remove();
-    }
-  });
-  $('#confirmCheckout').addEventListener('click', async () => {    if (!checkoutBody || paying) return;
-    const utr = $('#utrInput').value.trim().replace(/\s+/g, '');
-    if (!/^[A-Za-z0-9]{6,32}$/.test(utr)) {
-      showToast('Enter the UPI transaction ID from your payment app.');
-      $('#utrInput').focus();
-      return;
-    }
-    paying = true;
-    const btn = $('#confirmCheckout');
-    btn.disabled = true; btn.textContent = 'Submitting…';
-    try {
-      const res = await fetch(API_BASE + '/api/submit-claim', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...checkoutBody, utr }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not submit your claim.');
-      $('#checkoutDialog').close();
-      if (data.autoApplied) {
-        showToast(data.rank
-          ? `Payment auto-verified — your rank #${data.rank} is live!`
-          : 'Payment auto-verified — your rank is live!');
-      } else if (!openVerifyDialog(utr)) {
-        showToast('Claim submitted. Your payment is detected automatically and your rank goes live on its own.');
-      }
-      if (checkoutAfter) checkoutAfter(data);
-    } catch (err) {
-      showToast(err.message || 'Could not submit your claim.');
-    } finally {
-      btn.disabled = false; btn.textContent = 'I’ve paid — submit claim'; paying = false;
-    }
-  });
-  // Razorpay section (visible only when the backend reports razorpayEnabled).
-  const rzpCancel = $('#cancelCheckoutRzp');
-  if (rzpCancel) rzpCancel.addEventListener('click', () => $('#checkoutDialog').close());
-  const rzpBtn = $('#razorpayPayBtn');
-  if (rzpBtn) rzpBtn.addEventListener('click', payWithRazorpay);
+  const dlg = $('#checkoutDialog');
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+  const cfCancel = $('#cancelCheckoutCf');
+  if (cfCancel) cfCancel.addEventListener('click', () => dlg.close());
+  const cfBtn = $('#cashfreePayBtn');
+  if (cfBtn) cfBtn.addEventListener('click', payWithCashfree);
 }
 
-// ---- Razorpay Checkout ----
-let rzpScriptPromise = null;
-function loadRazorpayScript() {
-  if (window.Razorpay) return Promise.resolve();
-  if (!rzpScriptPromise) {
-    rzpScriptPromise = new Promise((resolve, reject) => {
+// ---- Cashfree Checkout ----
+let cfScriptPromise = null;
+function loadCashfreeScript() {
+  if (window.Cashfree) return Promise.resolve();
+  if (!cfScriptPromise) {
+    cfScriptPromise = new Promise((resolve, reject) => {
       const s = document.createElement('script');
       const fail = (msg) => {
         clearTimeout(timer);
         s.remove();
-        rzpScriptPromise = null; // allow a retry to load it again
+        cfScriptPromise = null; // allow a retry to load it again
         reject(new Error(msg));
       };
       const timer = setTimeout(() => fail('The payment window took too long to load. Check your connection and try again.'), 20000);
-      s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      s.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
       s.onload = () => { clearTimeout(timer); resolve(); };
       s.onerror = () => fail('Could not load the payment window. Check your connection and try again.');
       document.head.appendChild(s);
     });
   }
-  return rzpScriptPromise;
+  return cfScriptPromise;
 }
 
-function resetRzpBtn() {
-  const btn = $('#razorpayPayBtn');
-  if (btn) btn.disabled = false;
-  paying = false;
-}
-
-async function payWithRazorpay() {
+async function payWithCashfree() {
   if (!checkoutBody || paying) return;
+  const phoneInput = $('#cfPhoneInput');
+  const phone = (phoneInput.value || '').replace(/\D/g, '');
+  if (!/^[6-9]\d{9}$/.test(phone)) {
+    showToast('Enter your 10-digit mobile number for the payment.');
+    phoneInput.focus();
+    return;
+  }
   paying = true;
-  const btn = $('#razorpayPayBtn');
+  const btn = $('#cashfreePayBtn');
   const origLabel = btn.innerHTML;
   btn.disabled = true; btn.textContent = 'Starting payment…';
   try {
-    await loadRazorpayScript();
+    await loadCashfreeScript();
     const res = await fetch(API_BASE + '/api/create-order', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(checkoutBody),
+      body: JSON.stringify({ ...checkoutBody, phone }),
       signal: AbortSignal.timeout(30000),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Could not start the payment.');
-    const rzp = new Razorpay({
-      key: data.keyId,
-      amount: data.amount,
-      currency: data.currency || 'INR',
-      order_id: data.orderId,
-      name: 'Rankly',
-      description: 'Rank bid',
-      prefill: { email: checkoutBody.email || '' },
-      theme: { color: '#FF6A4D' },
-      modal: {
-        ondismiss: () => {
-          showToast('Payment not completed — your bid was not placed and no money was taken.');
-          btn.disabled = false; btn.innerHTML = origLabel; paying = false;
-        },
-      },
-      handler: (resp) => { handleRazorpaySuccess(resp, btn, origLabel); },
-    });
-    rzp.on('payment.failed', () => {
-      showToast('Payment failed — no money was taken. You can try again.');
-      btn.disabled = false; btn.innerHTML = origLabel; paying = false;
-    });
-    rzp.open();
-    // Hand off to the Razorpay window: our review dialog renders above the
-    // checkout overlay, so close it and reset the pay button. The dismiss /
-    // failure / success handlers below still run and show their toasts.
+    // Hand off to the Cashfree modal: our review dialog renders above the
+    // checkout overlay, so close it first and reset the pay button. The
+    // checkout promise below still settles and shows its toasts.
     const dlg = $('#checkoutDialog');
     if (dlg && dlg.open) dlg.close();
     btn.disabled = false; btn.innerHTML = origLabel; paying = false;
+    const cashfree = Cashfree({ mode: payConfig.cashfreeMode === 'sandbox' ? 'sandbox' : 'production' });
+    const result = await cashfree.checkout({ paymentSessionId: data.paymentSessionId, redirectTarget: '_modal' });
+    if (result.error) {
+      showToast(result.error.message || 'Payment failed — no money was taken. You can try again.');
+      return;
+    }
+    if (result.paymentDetails) {
+      await handleCashfreeSuccess(data.orderId, btn, origLabel);
+    } else {
+      showToast('Payment not completed — your bid was not placed and no money was taken.');
+    }
   } catch (err) {
     showToast(err.message || 'Could not start the payment.');
     btn.disabled = false; btn.innerHTML = origLabel; paying = false;
   }
 }
 
-async function handleRazorpaySuccess(resp, btn, origLabel) {
+async function handleCashfreeSuccess(orderId, btn, origLabel) {
   btn.disabled = true; btn.textContent = 'Verifying payment…';
   try {
     const res = await fetch(API_BASE + '/api/verify-payment', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(resp),
+      body: JSON.stringify({ order_id: orderId }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Payment verification failed.');
-    $('#checkoutDialog').close();
     showToast(data.rank
       ? `Payment verified — your rank #${data.rank} is live!`
       : 'Payment verified — your rank is live!');
     if (checkoutAfter) checkoutAfter(data);
   } catch (err) {
     // The money may still have been captured (e.g. our verify call failed
-    // on the network) — the Razorpay webhook backstop applies the claim, so
+    // on the network) — the Cashfree webhook backstop applies the claim, so
     // poll the claim status by order id and flip to success when it lands.
     showToast('Payment received — confirming your rank…');
-    $('#checkoutDialog').close();
-    openVerifyDialog(resp.razorpay_order_id, true);
+    openVerifyDialog(orderId);
   } finally {
     btn.disabled = false; btn.innerHTML = origLabel; paying = false;
   }
 }
 
 // ---- Live claim-status polling ----
-// After a claim is submitted without instant verification, the verify dialog
-// polls /api/claim-status until the bank-SMS webhook auto-verifies the
-// payment, then flips to the success state on its own.
+// After a Cashfree payment completes, the verify dialog polls
+// /api/claim-status until the webhook (or the verify call) applies the
+// claim, then flips to the success state on its own.
 let verifyTimer = null;
 let verifyPolls = 0;
 const VERIFY_MAX_POLLS = 75; // ~5 minutes at 4s intervals
@@ -345,22 +279,20 @@ function stopVerifyPolling() {
   if (verifyTimer) { clearInterval(verifyTimer); verifyTimer = null; }
 }
 
-function openVerifyDialog(utr, isRazorpay) {
+function openVerifyDialog(orderId) {
   const dlg = $('#verifyDialog');
   if (!dlg) return false;
   stopVerifyPolling();
   verifyPolls = 0;
-  $('#verifyTitle').textContent = isRazorpay ? 'Confirming your payment…' : 'Waiting for your payment…';
-  $('#verifyText').textContent = isRazorpay
-    ? 'Your payment reached us — we’re publishing your rank now. Keep this open.'
-    : 'Your claim is recorded. We’re watching for your bank’s payment confirmation — this usually takes under a minute. Keep this open.';
+  $('#verifyTitle').textContent = 'Confirming your payment…';
+  $('#verifyText').textContent = 'Your payment reached us — we’re publishing your rank now. Keep this open.';
   $('#verifySpinner').hidden = false;
   $('#verifyViewBoard').hidden = true;
   dlg.showModal();
   const tick = async () => {
     verifyPolls++;
     try {
-      const res = await fetch(API_BASE + '/api/claim-status?utr=' + encodeURIComponent(utr), { cache: 'no-store' });
+      const res = await fetch(API_BASE + '/api/claim-status?utr=' + encodeURIComponent(orderId), { cache: 'no-store' });
       const data = await res.json();
       if (data.found && data.status === 'applied') {
         stopVerifyPolling();
@@ -379,9 +311,7 @@ function openVerifyDialog(utr, isRazorpay) {
     if (verifyPolls >= VERIFY_MAX_POLLS) {
       stopVerifyPolling();
       $('#verifyTitle').textContent = 'Still verifying…';
-      $('#verifyText').textContent = isRazorpay
-        ? 'Your payment is taking longer than usual to confirm. No need to repay — your rank will go live automatically once it arrives.'
-        : 'Your payment hasn’t been detected yet. No need to resubmit — your rank will go live automatically once it arrives.';
+      $('#verifyText').textContent = 'Your payment is taking longer than usual to confirm. No need to repay — your rank will go live automatically once it arrives.';
       $('#verifySpinner').hidden = true;
     }
   };

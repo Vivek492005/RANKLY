@@ -153,7 +153,7 @@
             <label for="bidInput">Your bid (INR)</label>
             <div class="bid-stepper">
               <button type="button" id="bidMinus" aria-label="Decrease bid by one hundred rupees">−</button>
-              <input id="bidInput" type="number" inputmode="numeric" min="1" max="999" step="100" value="100" required />
+              <input id="bidInput" type="number" inputmode="numeric" min="1" max="999" step="10" value="100" required />
               <button type="button" id="bidPlus" aria-label="Increase bid by one hundred rupees">+</button>
             </div>
             <div class="bid-hint"><span>₹1 – ₹999</span><span id="rankEstimate">Estimated rank #1</span></div>
@@ -269,39 +269,25 @@
 
   <dialog class="modal" id="checkoutDialog" aria-labelledby="checkoutTitle">
     <div class="modal-inner">
-      <span class="modal-label">PAY WITH UPI</span>
+      <span class="modal-label">SECURE CHECKOUT</span>
       <h2 id="checkoutTitle">Complete your bid</h2>
-      <p id="checkoutIntroManual">Pay the exact bid amount from any UPI app, then submit your transaction ID below. Our system detects your payment automatically and your rank goes live on its own.</p>
-      <p id="checkoutIntroRzp" hidden>Pay securely below with UPI, cards or netbanking. Your rank goes live the moment the payment succeeds.</p>
+      <p id="checkoutIntroCf">Pay securely below with UPI, cards or netbanking. Your rank goes live the moment the payment succeeds.</p>
       <div class="order-summary">
         <div class="order-line"><span id="reviewLabel1">Profile</span><strong id="reviewValue1"></strong></div>
         <div class="order-line"><span id="reviewLabel2">Headline</span><strong id="reviewValue2"></strong></div>
         <div class="order-line"><span id="reviewLabel3">Bid amount</span><strong id="reviewValue3"></strong></div>
         <div class="order-line"><span id="reviewLabel4">Estimated rank</span><strong id="reviewValue4"></strong></div>
       </div>
-      <div class="rzp-pay" id="rzpPaySection" hidden>
-        <button class="modal-confirm rzp-btn" id="razorpayPayBtn" type="button">Pay securely</button>
-        <p class="fineprint">Processed securely by Razorpay — UPI, cards & netbanking accepted.</p>
+      <div class="cf-pay" id="cfPaySection">
+        <div class="field">
+          <label for="cfPhoneInput">Mobile number (for the payment)</label>
+          <input id="cfPhoneInput" type="tel" inputmode="numeric" autocomplete="tel" placeholder="10-digit mobile number" maxlength="10" />
+        </div>
+        <button class="modal-confirm cf-btn" id="cashfreePayBtn" type="button">Pay securely</button>
+        <p class="fineprint">Processed securely by Cashfree — UPI, cards & netbanking accepted.</p>
         <div class="modal-actions">
-          <button class="modal-cancel" id="cancelCheckoutRzp" type="button">Go back</button>
+          <button class="modal-cancel" id="cancelCheckoutCf" type="button">Go back</button>
         </div>
-      </div>
-      <div id="manualPaySection">
-      <div class="upi-pay">
-        <img src="upi-qr.png" alt="Rankly UPI QR code" class="upi-qr" />
-        <div class="upi-pay-info">
-          <div class="upi-id"><span>UPI ID</span><strong id="upiIdText">sochai@ptyes</strong><button type="button" id="copyUpiId" class="copy-btn">Copy</button></div>
-          <p class="fineprint">Pay exactly <strong id="upiAmount"></strong>. After paying, note the 12-digit transaction ID / UTR from your payment app.</p>
-        </div>
-      </div>
-      <div class="field">
-        <label for="utrInput">UPI transaction ID (UTR)</label>
-        <input id="utrInput" type="text" inputmode="text" autocomplete="off" placeholder="e.g. 412345678901" maxlength="32" />
-      </div>
-      <div class="modal-actions">
-        <button class="modal-cancel" id="cancelCheckout" type="button">Go back</button>
-        <button class="modal-confirm" id="confirmCheckout" type="button">I've paid — submit claim</button>
-      </div>
       </div>
       <p class="fineprint">Rank bids are non-refundable once published. Full policy in the Terms.</p>
     </div>
@@ -311,7 +297,7 @@
     <div class="modal-inner">
       <span class="modal-label">PAYMENT VERIFICATION</span>
       <h2 id="verifyTitle">Waiting for your payment…</h2>
-      <p id="verifyText">Your claim is recorded. We’re watching for your bank’s payment confirmation — this usually takes under a minute. Keep this open.</p>
+      <p id="verifyText">Your claim is recorded. We’re confirming your payment now — this usually takes under a minute. Keep this open.</p>
       <div class="verify-status" id="verifySpinner" aria-hidden="true"><span class="spinner"></span></div>
       <div class="modal-actions">
         <button class="modal-cancel" id="verifyClose" type="button">Close</button>
