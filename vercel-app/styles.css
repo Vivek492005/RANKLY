@@ -803,7 +803,7 @@ footer.site-footer {
 .footer-credit { margin: 0 0 12px; }
 .footer-credit strong { color: var(--accent-primary); font-weight: 700; }
 .footer-links {
-  display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 4px;
+  display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 4px;
   margin: 0 0 16px;
 }
 .footer-links a, .footer-links button {
@@ -830,16 +830,6 @@ footer.site-footer {
 .footer-badge .badge-text { text-align: left; }
 .footer-badge .badge-text strong { display: block; font-size: 0.85rem; }
 .footer-badge .badge-text span { font-size: 0.66rem; color: var(--text-muted); letter-spacing: 0.06em; }
-.data-pill {
-  display: inline-flex; align-items: center; gap: 7px;
-  border: 1px solid var(--border-subtle); border-radius: var(--radius-pill);
-  padding: 5px 13px; font-size: 0.72rem; white-space: nowrap;
-  background: var(--bg-surface); color: var(--text-secondary);
-  margin-top: 14px;
-}
-.data-pill .dot-live { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); }
-.data-pill[data-state="live"] .dot-live { background: var(--success-dot); }
-.data-pill[data-state="error"] .dot-live { background: var(--accent-primary); }
 
 /* ================= Dialogs ================= */
 dialog {
