@@ -22,7 +22,7 @@ import rankly_db as db
 
 TAB_ALERTS = "Alert state"
 ALERT_HEADERS = ["Email", "Board", "Name", "Link", "Last rank", "Updated"]
-SITE = "https://vercel-app-ashen-eight.vercel.app"
+SITE = "https://ranklyy.vercel.app"
 BOARD_LABEL = {"profiles": "Student Leaderboard", "showcase": "Showcase board"}
 
 
@@ -75,7 +75,8 @@ def send_alert(email, name, board, old_rank, new_rank, dry_run):
         f"Heads up: your rank on Rankly just dropped. You're now #{new_rank} on the "
         f"{label} (was #{old_rank}).\n\n"
         f"Reclaim your spot: {SITE}\n\n"
-        f"You're getting this because you claimed a rank with this email address.\n"
+        f"You're getting this because you claimed a rank with this email "
+        f"address. Reply \"unsubscribe\" to stop these alerts.\n"
         f"— Rankly"
     )
     if dry_run:
@@ -117,8 +118,32 @@ def main():
         if r[0].strip():
             state[(r[0].strip().lower(), r[1].strip().lower())] = r
 
+    # 1-based sheet rows per (email, board), for crash-safe per-recipient
+    # writes: a send is persisted the moment it succeeds, so a mid-run crash
+    # can never cause duplicates on the next run (F3).
+    alert_rows = {}
+    for i, r in enumerate(alert_vals[1:] if len(alert_vals) > 1 else [],
+                          start=2):
+        rr = db.pad(r, 6)
+        if rr[0].strip():
+            alert_rows[(rr[0].strip().lower(),
+                        rr[1].strip().lower())] = i
+    next_row = [max(alert_rows.values(), default=1) + 1]
+
+    def flush_alert(email, board):
+        if dry_run:
+            return
+        key = (email, board)
+        idx = alert_rows.get(key)
+        if idx is None:
+            idx = next_row[0]
+            next_row[0] += 1
+            alert_rows[key] = idx
+        db.update_values(TAB_ALERTS, f"A{idx}:F{idx}", [state[key]])
+
     now = datetime.now().strftime("%Y-%m-%d %H:%M")
     alerts = 0
+    failures = []
     for (email, board), claim in sorted(latest.items()):
         key = claim_key(claim)
         board_map = prof_rank if board == "profiles" else work_rank
@@ -132,16 +157,32 @@ def main():
             # Off the board (e.g. after the Sunday reset): clear baseline silently.
             if prev_rank:
                 state[(email, board)] = [email, board, name, link, "", now]
+                flush_alert(email, board)
             continue
         if prev_rank and rank > prev_rank:
-            send_alert(email, name, board, prev_rank, rank, dry_run)
+            try:
+                send_alert(email, name, board, prev_rank, rank, dry_run)
+            except SystemExit:
+                # cli() exits on Gmail API errors; convert to a per-recipient
+                # failure so the rest of the run continues (F4).
+                print(f"send failed for {email} (gmail error), continuing",
+                      file=sys.stderr)
+                failures.append(email)
+                continue
+            except Exception as e:
+                print(f"send failed for {email}: {e}, continuing",
+                      file=sys.stderr)
+                failures.append(email)
+                continue
             alerts += 1
         state[(email, board)] = [email, board, name, link, str(rank), now]
+        flush_alert(email, board)
 
     if not dry_run:
         rows = [state[k] for k in sorted(state)]
         db.update_values(TAB_ALERTS, "A1", [ALERT_HEADERS] + rows)
-    print(f"checked {len(latest)} tracked claims, sent {alerts} alerts")
+    print(f"checked {len(latest)} tracked claims, sent {alerts} alerts, "
+          f"{len(failures)} failures")
 
 
 if __name__ == "__main__":
